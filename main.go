@@ -1,5 +1,13 @@
 package main
 
-func main() {
+import (
+	"driver"
+	. "fmt"
+)
 
+func main() {
+	Println("test")
+	for {
+
+	}
 }
