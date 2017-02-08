@@ -1,23 +1,23 @@
 package main
 
 import (
-	"driver"
+	. "./src/driver/"
 	. "fmt"
 )
 
-LIGHT_IND := {FLOOR_IND1, FLOOR_IND2, FLOOR_IND3, FLOOR_IND4}
+var LIGHT_IND = [4]int{LIGHT_COMMAND1, LIGHT_COMMAND2, LIGHT_COMMAND3, LIGHT_COMMAND4}
 
 func checkSensors() int {
-	if driver.ReadBit(SENSOR1) {
+	if ReadBit(SENSOR1) {
 		return 1
 	}
-	if driver.ReadBit(SENSOR2) {
+	if ReadBit(SENSOR2) {
 		return 2
 	}
-	if driver.ReadBit(SENSOR3) {
+	if ReadBit(SENSOR3) {
 		return 3
 	}
-	if driver.ReadBit(SENSOR4) {
+	if ReadBit(SENSOR4) {
 		return 4
 	}
 	return -1
@@ -25,36 +25,38 @@ func checkSensors() int {
 
 func main() {
 	Println("test")
+	IoInit()
 
-	driver.io_clear_bit(MOTORDIR)
-	driver.WriteAnalog(MOTOR, 2800)
-	last := 0
+	ClearBit(MOTORDIR)
+	WriteAnalog(MOTOR, 2800)
+	last := 1
 	for {
 		i := checkSensors()
 		switch i {
-			case last:
-				break
-			case -1: 
-				driver.clearBit(LIGHT_IND[last-1])
-			default:
-				driver.SetBit(LIGHT_IND[i-1])
+		case last:
+			break
+		case -1:
+			break
+		default:
+			ClearBit(LIGHT_IND[last-1])
+			SetBit(LIGHT_IND[i-1])
+			last = i
 		}
-		last = i
 
-		if driver:ReadBit(OBSTRUCTION) {
-			driver.WriteAnalog(MOTOR, 0)
-		}
-		else{	
-			if driver.ReadBit(SENSOR1) {
+		if ReadBit(OBSTRUCTION) {
+			WriteAnalog(MOTOR, 0)
+		} else {
+			WriteAnalog(MOTOR, 2800)
+			if ReadBit(SENSOR1) {
 				//Drive up
-				driver.io_clear_bit(MOTORDIR)
-				driver.WriteAnalog(MOTOR, 2800)
+				ClearBit(MOTORDIR)
+				WriteAnalog(MOTOR, 2800)
 			}
 
-			if driver.ReadBit(SENSOR4) {
+			if ReadBit(SENSOR4) {
 				//Drive down
-				driver.io_clear_bit(MOTORDIR)
-				driver.WriteAnalog(MOTOR, 2800)
+				SetBit(MOTORDIR)
+				WriteAnalog(MOTOR, 2800)
 			}
 		}
 	}

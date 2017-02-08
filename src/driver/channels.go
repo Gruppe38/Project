@@ -1,22 +1,22 @@
-package drivers
+package driver
 
 //in port 4
 const PORT4 = 3
 const OBSTRUCTION = (0x300 + 23)
 const STOP = (0x300 + 22)
-const FLOOR_COMMAND1 = (0x300 + 21)
-const FLOOR_COMMAND2 = (0x300 + 20)
-const FLOOR_COMMAND3 = (0x300 + 19)
-const FLOOR_COMMAND4 = (0x300 + 18)
-const FLOOR_UP1 = (0x300 + 17)
-const FLOOR_UP2 = (0x300 + 16)
+const BUTTON_COMMAND1 = (0x300 + 21)
+const BUTTON_COMMAND2 = (0x300 + 20)
+const BUTTON_COMMAND3 = (0x300 + 19)
+const BUTTON_COMMAND4 = (0x300 + 18)
+const BUTTON_UP1 = (0x300 + 17)
+const BUTTON_UP2 = (0x300 + 16)
 
 //in port 1
 const PORT1 = 2
-const FLOOR_DOWN2 = (0x200 + 0)
-const FLOOR_UP3 = (0x200 + 1)
-const FLOOR_DOWN3 = (0x200 + 2)
-const FLOOR_DOWN4 = (0x200 + 3)
+const BUTTON_DOWN2 = (0x200 + 0)
+const BUTTON_UP3 = (0x200 + 1)
+const BUTTON_DOWN3 = (0x200 + 2)
+const BUTTON_DOWN4 = (0x200 + 3)
 const SENSOR1 = (0x200 + 4)
 const SENSOR2 = (0x200 + 5)
 const SENSOR3 = (0x200 + 6)
@@ -48,7 +48,23 @@ const PORT0 = 1
 const MOTOR = (0x100 + 0)
 
 //non-existing ports = (for alignment)
-const FLOOR_DOWN1 = -1
-const FLOOR_UP4 = -1
+const BUTTON_DOWN1 = -1
+const BUTTON_UP4 = -1
 const LIGHT_DOWN1 = -1
 const LIGHT_UP4 = -1
+
+const N_FLOOR = 4
+
+var LightMatrix = [N_FLOOR][3]int{
+	{LIGHT_UP1, LIGHT_DOWN1, LIGHT_COMMAND1},
+	{LIGHT_UP2, LIGHT_DOWN2, LIGHT_COMMAND2},
+	{LIGHT_UP3, LIGHT_DOWN3, LIGHT_COMMAND3},
+	{LIGHT_UP4, LIGHT_DOWN4, LIGHT_COMMAND4},
+}
+
+var OrderButtonMatrix = [N_FLOOR][3]int{
+	{BUTTON_UP1, BUTTON_DOWN1, BUTTON_COMMAND1},
+	{BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
+	{BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
+	{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
+}

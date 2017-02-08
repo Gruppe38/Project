@@ -1,13 +1,27 @@
-package drivers
+package driver
 
 /*
-#cgo LDFLAGS: -lcomedi -lm
+#cgo LDFLAGS: -lcomedi -lm -std=c99
 #include "io.h"
 */
 import "C"
 
 func IoInit() bool {
-	return bool(int(C.io_init()) != 1)
+	success := bool(int(C.io_init()) != 1)
+
+	if success {
+		for i := 0; i < N_FLOOR; i++ {
+			for j := 0; j < 3; i++ {
+				ClearBit(LightMatrix[i][j])
+			}
+		}
+		ClearBit(FLOOR_IND1)
+		ClearBit(FLOOR_IND2)
+		ClearBit(LIGHT_STOP)
+		ClearBit(DOOR_OPEN)
+	}
+	return success
+
 }
 
 func SetBit(channel int) {
