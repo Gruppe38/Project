@@ -1,9 +1,9 @@
 package main
 
 import (
-	"./network/bcast"
-	"./network/localip"
-	"./network/peers"
+	"./src/network/bcast"
+	"./src/network/localip"
+	"./src/network/peers"
 	"flag"
 	"fmt"
 	"os"
@@ -43,8 +43,8 @@ func main() {
 	// We can disable/enable the transmitter after it has been started.
 	// This could be used to signal that we are somehow "unavailable".
 	peerTxEnable := make(chan bool)
-	go peers.Transmitter(15647, id, peerTxEnable)
-	go peers.Receiver(15647, peerUpdateCh)
+	go peers.Transmitter(12038, id, peerTxEnable)
+	go peers.Receiver(12038, peerUpdateCh)
 
 	// We make channels for sending and receiving our custom data types
 	helloTx := make(chan HelloMsg)
@@ -52,8 +52,8 @@ func main() {
 	// ... and start the transmitter/receiver pair on some port
 	// These functions can take any number of channels! It is also possible to
 	//  start multiple transmitters/receivers on the same port.
-	go bcast.Transmitter(16569, helloTx)
-	go bcast.Receiver(16569, helloRx)
+	go bcast.Transmitter(13038, helloTx)
+	go bcast.Receiver(13038, helloRx)
 
 	// The example message. We just send one of these every second.
 	go func() {
