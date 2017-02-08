@@ -18,6 +18,8 @@ func Transmitter(port int, chans ...interface{}) {
 	for range chans {
 		n++
 	}
+	list := [4]bool{true, true, true, true}
+	channelList := list[0:n]
 
 	selectCases := make([]reflect.SelectCase, n)
 	typeNames := make([]string, n)
@@ -31,11 +33,22 @@ func Transmitter(port int, chans ...interface{}) {
 
 	conn := conn.DialBroadcastUDP(port)
 	addr, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf("255.255.255.255:%d", port))
-	for {
-		chosen, value, _ := reflect.Select(selectCases)
-		buf, _ := json.Marshal(value.Interface())
-		conn.WriteTo([]byte(typeNames[chosen]+string(buf)), addr)
+
+	for n > 0 {
+		chosen, value, t := reflect.Select(selectCases)
+		if t {
+			buf, _ := json.Marshal(value.Interface())
+			conn.WriteTo([]byte(typeNames[chosen]+string(buf)), addr)
+		} else {
+			if channelList[chosen] {
+				fmt.Println("channel closed")
+				n--
+				channelList[chosen] = false
+			}
+
+		}
 	}
+	fmt.Println("Done")
 }
 
 // Matches type-tagged JSON received on `port` to element types of `chans`, then
@@ -47,6 +60,7 @@ func Receiver(port int, chans ...interface{}) {
 	conn := conn.DialBroadcastUDP(port)
 	for {
 		n, _, _ := conn.ReadFrom(buf[0:])
+		fmt.Println("reading")
 		for _, ch := range chans {
 			T := reflect.TypeOf(ch).Elem()
 			typeName := T.String()

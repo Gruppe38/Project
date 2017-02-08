@@ -48,21 +48,27 @@ func main() {
 
 	// We make channels for sending and receiving our custom data types
 	helloTx := make(chan HelloMsg)
+	helloTx2 := make(chan int)
 	helloRx := make(chan HelloMsg)
+	helloRx2 := make(chan int)
 	// ... and start the transmitter/receiver pair on some port
 	// These functions can take any number of channels! It is also possible to
 	//  start multiple transmitters/receivers on the same port.
-	go bcast.Transmitter(13038, helloTx)
-	go bcast.Receiver(13038, helloRx)
+	go bcast.Transmitter(13038, helloTx, helloTx2)
+	go bcast.Receiver(13038, helloRx, helloRx2)
 
 	// The example message. We just send one of these every second.
 	go func() {
 		helloMsg := HelloMsg{"Hello from " + id, 0}
-		for {
+		for i := 0; i < 3; i++ {
 			helloMsg.Iter++
 			helloTx <- helloMsg
+			helloTx2 <- helloMsg.Iter - 2
 			time.Sleep(1 * time.Second)
 		}
+		close(helloTx)
+		time.Sleep(1 * time.Second)
+		close(helloTx2)
 	}()
 
 	fmt.Println("Started")
@@ -76,6 +82,8 @@ func main() {
 
 		case a := <-helloRx:
 			fmt.Printf("Received: %#v\n", a)
+		case b := <-helloRx2:
+			fmt.Printf("Received: %#v\n", b)
 		}
 	}
 }
