@@ -38,7 +38,7 @@ func Transmitter(port int, chans ...interface{}) {
 		chosen, value, t := reflect.Select(selectCases)
 		if t {
 			buf, _ := json.Marshal(value.Interface())
-			conn.WriteTo([]byte(typeNames[chosen]+string(buf)), addr)
+			conn.WriteTo([]byte(typeNames[chosen]+string(buf)+"test"), addr)
 		} else {
 			if channelList[chosen] {
 				fmt.Println("channel closed")
@@ -66,7 +66,13 @@ func Receiver(port int, chans ...interface{}) {
 			typeName := T.String()
 			if strings.HasPrefix(string(buf[0:n])+"{", typeName) {
 				v := reflect.New(T)
-				json.Unmarshal(buf[len(typeName):n], v.Interface())
+				w := reflect.New(reflect.TypeOf("test"))
+
+				json.Unmarshal(buf[len(typeName):n-len("test")], v.Interface())
+				json.Unmarshal(buf[n-len("test"):n], w.Interface())
+
+				b := reflect.Indirect(w)
+				fmt.Printf("Teststring: %#v\n", b)
 
 				reflect.Select([]reflect.SelectCase{{
 					Dir:  reflect.SelectSend,
