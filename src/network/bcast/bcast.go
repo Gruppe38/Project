@@ -72,7 +72,8 @@ func Receiver(port int, chans ...interface{}) {
 				//Unmarshal the normal message, without "test"
 				json.Unmarshal(buf[len(typeName):n-len("test")], v.Interface())
 				//Unsure if this works. Remainder of buffer may be deleted after previous unmarshal
-				json.Unmarshal(buf[n-len("test"):n], w.Interface())
+				a := buf[n-len("test") : n]
+				fmt.Println(string(a))
 
 				b := reflect.Indirect(w)
 				fmt.Printf("Teststring: %#v\n", b)
