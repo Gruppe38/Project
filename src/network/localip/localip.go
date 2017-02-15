@@ -1,7 +1,10 @@
 package localip
 
 import (
+	"flag"
+	"fmt"
 	"net"
+	"os"
 	"strings"
 )
 
@@ -17,4 +20,20 @@ func LocalIP() (string, error) {
 		localIP = strings.Split(conn.LocalAddr().String(), ":")[0]
 	}
 	return localIP, nil
+}
+
+func GetProcessID() string {
+	var id string
+	flag.StringVar(&id, "id", "", "id of this peer")
+	flag.Parse()
+
+	if id == "" {
+		IP, err := LocalIP()
+		if err != nil {
+			fmt.Println(err)
+			IP = "DISCONNECTED"
+		}
+		id = fmt.Sprintf("peer-%s-%d", IP, os.Getpid())
+	}
+	return id
 }

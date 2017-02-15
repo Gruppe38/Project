@@ -5,6 +5,7 @@ package driver
 #include "io.h"
 */
 import "C"
+import . "./commBits/"
 
 func IoInit() bool {
 	success := bool(int(C.io_init()) != 1)

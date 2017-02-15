@@ -40,9 +40,7 @@ void io_clear_bit(int channel) {
 
 
 void io_write_analog(int channel, int value) {
-    printf("writing to motor");
     comedi_data_write(it_g, channel >> 8, channel & 0xff, 0, AREF_GROUND, value);
-    printf("wrote to motor");
 }
 
 

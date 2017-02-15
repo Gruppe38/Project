@@ -1,7 +1,7 @@
 #include <comedilib.h>
 
 #include "io.h"
-#include "channels.h"
+#include "commBits.h"
 #include <stdio.h>
 
 

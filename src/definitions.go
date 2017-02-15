@@ -1,8 +1,5 @@
 package definitons
 
-import (
-	""
-)
 
 type elevatorStatus struct {
 	direction bool
@@ -12,7 +9,7 @@ type elevatorStatus struct {
 }
 
 type elevatorQueue struct {
-	orders [N_FLOORS][3]bool
+	orders [4][3]bool
 }
 
 type orderQueue struct {
