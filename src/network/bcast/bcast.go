@@ -35,11 +35,11 @@ func Transmitter(port int, chans ...interface{}) {
 	addr, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf("255.255.255.255:%d", port))
 
 	for n > 0 {
-		chosen, value, t := reflect.Select(selectCases)
+		chosen, message, t := reflect.Select(selectCases)
 		if t {
-			buf, _ := json.Marshal(value.Interface())
+			buf, _ := json.Marshal(message.Interface())
 			//Adding "test" to data sent over network, attempting to extract this part at reciver
-			conn.WriteTo([]byte(typeNames[chosen]+string(buf)+"test"), addr)
+			conn.WriteTo([]byte(typeNames[chosen]+string(buf)+generateID(message)), addr)
 		} else {
 			if channelList[chosen] {
 				fmt.Println("channel closed")
@@ -61,22 +61,17 @@ func Receiver(port int, chans ...interface{}) {
 	conn := conn.DialBroadcastUDP(port)
 	for {
 		n, _, _ := conn.ReadFrom(buf[0:])
-		fmt.Println("reading")
 		for _, ch := range chans {
 			T := reflect.TypeOf(ch).Elem()
 			typeName := T.String()
 			if strings.HasPrefix(string(buf[0:n])+"{", typeName) {
 				v := reflect.New(T)
-				w := reflect.New(reflect.TypeOf("test"))
 
 				//Unmarshal the normal message, without "test"
 				json.Unmarshal(buf[len(typeName):n-len("test")], v.Interface())
-				//Unsure if this works. Remainder of buffer may be deleted after previous unmarshal
-				a := buf[n-len("test") : n]
-				fmt.Println(string(a))
 
-				b := reflect.Indirect(w)
-				fmt.Printf("Teststring: %#v\n", b)
+				a := buf[n-4 : n]
+				fmt.Println(string(a))
 
 				reflect.Select([]reflect.SelectCase{{
 					Dir:  reflect.SelectSend,
@@ -136,4 +131,8 @@ func checkArgs(chans ...interface{}) {
 			}
 		}
 	}
+}
+
+func generateID(message interface{}) string {
+	return "test"
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./src/definitions"
 	"./src/network/bcast"
 	"./src/network/localip"
 	"./src/network/peers"
@@ -13,10 +14,6 @@ import (
 // We define some custom struct to send over the network.
 // Note that all members we want to transmit must be public. Any private members
 //  will be received as zero-values.
-type HelloMsg struct {
-	Message string
-	Iter    int
-}
 
 func main() {
 	// Our id can be anything. Here we pass it on the command line, using
@@ -60,7 +57,7 @@ func main() {
 	// The example message. We just send one of these every second.
 	go func() {
 		helloMsg := HelloMsg{"Hello from " + id, 0}
-		for i := 0; i < 3; i++ {
+		for {
 			helloMsg.Iter++
 			helloTx <- helloMsg
 			helloTx2 <- helloMsg.Iter - 2
