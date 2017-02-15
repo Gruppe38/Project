@@ -38,6 +38,7 @@ func Transmitter(port int, chans ...interface{}) {
 		chosen, value, t := reflect.Select(selectCases)
 		if t {
 			buf, _ := json.Marshal(value.Interface())
+			//Adding "test" to data sent over network, attempting to extract this part at reciver
 			conn.WriteTo([]byte(typeNames[chosen]+string(buf)+"test"), addr)
 		} else {
 			if channelList[chosen] {
@@ -68,7 +69,9 @@ func Receiver(port int, chans ...interface{}) {
 				v := reflect.New(T)
 				w := reflect.New(reflect.TypeOf("test"))
 
+				//Unmarshal the normal message, without "test"
 				json.Unmarshal(buf[len(typeName):n-len("test")], v.Interface())
+				//Unsure if this works. Remainder of buffer may be deleted after previous unmarshal
 				json.Unmarshal(buf[n-len("test"):n], w.Interface())
 
 				b := reflect.Indirect(w)
