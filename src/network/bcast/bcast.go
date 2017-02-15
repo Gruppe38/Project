@@ -56,11 +56,13 @@ func Transmitter(port int, chans ...interface{}) {
 func Receiver(port int, chans ...interface{}) {
 	checkArgs(chans...)
 
+	test := make(chan HelloMsg)
+	go confirmMessages(test)
+
 	var buf [1024]byte
 	conn := conn.DialBroadcastUDP(port)
 	for {
 		n, _, _ := conn.ReadFrom(buf[0:])
-		fmt.Println("reading")
 		for _, ch := range chans {
 			T := reflect.TypeOf(ch).Elem()
 			typeName := T.String()
@@ -73,7 +75,26 @@ func Receiver(port int, chans ...interface{}) {
 					Chan: reflect.ValueOf(ch),
 					Send: reflect.Indirect(v),
 				}})
+				x, _ := reflect.ValueOf(v).Interface().(HelloMsg)
+				test <- x
 			}
+		}
+
+	}
+}
+
+type HelloMsg struct {
+	Message string
+	Iter    int
+}
+
+func confirmMessages(chan1 <-chan HelloMsg) {
+	test := make(chan int)
+	go Transmitter(13039, test)
+	for {
+		select {
+		case a := <-chan1:
+			test <- a.Iter
 		}
 	}
 }
