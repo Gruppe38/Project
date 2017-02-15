@@ -134,5 +134,7 @@ func checkArgs(chans ...interface{}) {
 }
 
 func generateID(message interface{}) string {
+	//fmt.Println(message.Interface())
+	fmt.Println(message)
 	return "test"
 }
