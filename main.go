@@ -1,7 +1,7 @@
 package main
 
 import (
-	//	. "./src/defs/"
+		. "./src/defs/"
 	//. "./src/driver/"
 	. "./src/network/localip"
 	. "./src/network/peers"
@@ -9,7 +9,30 @@ import (
 )
 
 func main() {
-	//var state = Init
+	var state = Init
+	for {
+		switch state {
+			case Init:{
+				continue
+			}
+			case Master:{
+				continue
+
+			}
+			case Slave:{
+				continue
+
+			}
+			case NoNetwork:{
+				continue
+
+			}
+			case DeadElevator:{
+				continue
+			}
+		}
+	}
+
 
 	//elevatorIsAlive := IoInit()
 
