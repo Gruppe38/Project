@@ -10,26 +10,20 @@ import (
 
 func main() {
 	var state = Init
+
+
 	for {
 		switch state {
-			case Init:{
+			case Init:
 				continue
-			}
-			case Master:{
+			case Master:
 				continue
-
-			}
-			case Slave:{
+			case Slave:
 				continue
-
-			}
-			case NoNetwork:{
+			case NoNetwork:
 				continue
-
-			}
-			case DeadElevator:{
+			case DeadElevator:
 				continue
-			}
 		}
 	}
 

@@ -102,6 +102,31 @@ func timer(start chan bool, stop chan bool, shutdownChan chan bool){
 	// sjekke om den er startet 
 }
 
+//Kalles som en go funksjon
+//Når noe blir skrevet på start, starter timer (3s) og setter currentlyRunning til true
+//Når timer går ut (nå tid skrives på dorTimer.C), sett currentlyRunning til false
+//Når noen "spør" (sender en verdi på ask) skrives currentlyRunning til answer
+func timer2(start chan bool, ask chan bool, answer chan bool, shutdownChan chan bool){
+	doorTimer := time.NewTimer(3*time.Second)
+	doorTimer.Stop()
+	currentlyRunning := false
+	for{
+		select{
+		case _ := <- start:
+			doorTimer.Stop()
+			doorTimer.Reset(3*time.Second)
+			currentlyRunning = true
+		case _ := <- ask:
+			stop <- currentlyRunning
+		case _ <- doorTimer.C :
+			currentlyRunning = false
+		case _ := <- shutdownChan:
+			break
+		}
+	}
+}
+
+
 func checkOrderbuttons(buttons chan int, shutdown chan bool){
 	last := -1
 	for {
