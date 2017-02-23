@@ -2,9 +2,10 @@
 
 set GOPATH=C:\Users\Arild\Desktop\Lab\Project
 
-Simulator:
+Simulator: fra min laptop
 source ~/dlang/dmd-2.073.0/activate
-rdmd sim_server.d //fra mappa simulator/server
+cd Documents/git/Simulator/Project/simulator/server
+rdmd sim_server.d
 
 
 filer til sim:

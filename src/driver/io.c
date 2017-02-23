@@ -17,7 +17,7 @@
 static comedi_t *it_g = NULL;
 
 
-/*int io_init(void) {
+int io_init(void) {
 
     it_g = comedi_open("/dev/comedi0");
 
@@ -35,13 +35,13 @@ int i = 0;
     }
 
     return (status == 0);
-}*/
+}
 
 static int sockfd;
 static pthread_mutex_t sockmtx;
-int io_init(void) {
-	;
-    char ip[16] = {0};
+
+int sim_init(void) {
+        char ip[16] = {0};
         char port[8] = {0};
         con_load("simulator.con",
             con_val("com_ip",   ip,   "%s")
@@ -67,8 +67,9 @@ int io_init(void) {
         freeaddrinfo(res);
 
         send(sockfd, (char[4]) {0}, 4, 0);
+	
+	return 1;
 }
-
 
 
 void io_set_bit(int channel) {

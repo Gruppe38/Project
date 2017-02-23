@@ -11,7 +11,8 @@ import (
 func main() {
 	var state = Init
 
-	IoInit()
+	//IoInit()
+	SimInit()
 
 
 	for {

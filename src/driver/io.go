@@ -28,6 +28,11 @@ func IoInit() bool {
 
 }
 
+func SimInit() bool {
+	success := bool(int(C.sim_init()) != 1)
+	return success
+}
+
 func SetBit(channel int) {
 	C.io_set_bit(C.int(channel))
 }
