@@ -113,11 +113,14 @@ func timer2(start chan bool, ask chan bool, answer chan bool, shutdownChan chan 
 	for{
 		select{
 		case _ := <- start:
-			doorTimer.Stop()
+			//Avoid race condition 
+			if !doorTimer.Stop() && currentlyRunning{
+				<- doorTimer.C
+			}
 			doorTimer.Reset(3*time.Second)
 			currentlyRunning = true
 		case _ := <- ask:
-			stop <- currentlyRunning
+			answer <- currentlyRunning
 		case _ <- doorTimer.C :
 			currentlyRunning = false
 		case _ := <- shutdownChan:
@@ -134,15 +137,24 @@ func timer3(start chan bool, ask chan bool, shutdownChan chan bool){
 	currentlyRunning := false
 	for{
 		select{
-		case _ := <- start:
-			doorTimer.Stop()
+		case  <- start:
+			//Avoid race condition 
+			/*for vår skyld, slett etterpå:
+			Deette er for unngå det tilfelel der timer kjører når vi går inn i denne casen
+			men så blir den satt på pause, og timeren blir ferdig og sender sin verdi til doorTimer.c
+			I så fall ville vi startet timeren på nytt, go så gå ut av case - og rett inn i
+			casen der vi får verdi fra doorTimer.c, og vi vil da tro timeren allerede er ferdig
+			*/
+			if !doorTimer.Stop() && currentlyRunning{
+				<- doorTimer.C
+			}
 			doorTimer.Reset(3*time.Second)
 			currentlyRunning = true
 		case question := <- ask:
 			ask <- question == currentlyRunning
-		case _ <- doorTimer.C :
+		case  <- doorTimer.C :
 			currentlyRunning = false
-		case _ := <- shutdownChan:
+		case  <- shutdownChan:
 			break
 		}
 	}
