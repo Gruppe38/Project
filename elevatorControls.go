@@ -126,6 +126,29 @@ func timer2(start chan bool, ask chan bool, answer chan bool, shutdownChan chan 
 	}
 }
 
+//Som timer 2, men isteded tar inn bool, og returnerer om status er samme som bool, på samme kanal
+//Fordel: Mer "logisk" bruk av channel, brukes som er en bare trigger til et event
+func timer3(start chan bool, ask chan bool, shutdownChan chan bool){
+	doorTimer := time.NewTimer(3*time.Second)
+	doorTimer.Stop()
+	currentlyRunning := false
+	for{
+		select{
+		case _ := <- start:
+			doorTimer.Stop()
+			doorTimer.Reset(3*time.Second)
+			currentlyRunning = true
+		case question := <- ask:
+			ask <- question == currentlyRunning
+		case _ <- doorTimer.C :
+			currentlyRunning = false
+		case _ := <- shutdownChan:
+			break
+		}
+	}
+}
+
+
 
 func checkOrderbuttons(buttons chan int, shutdown chan bool){
 	last := -1
