@@ -30,12 +30,12 @@ func localElevator (beskjed(dir, targetFloor) chan, shutdown chan){
 				}
 
 				if checkSensors() != targetFloor{
-					driver.WriteAnalog(MOTOR.2800)
+					driver.WriteAnalog(MOTOR,2800)
 				}
 
 			case floor := <- currentFloorChan:
 				if targetFloor == floor {
-					driver.WriteAnalog(MOTOR.0)
+					driver.WriteAnalog(MOTOR,0)
 					doorTimer.Reset(3*time.Second)
 				}
 
@@ -159,7 +159,6 @@ func timer3(start chan bool, ask chan bool, shutdownChan chan bool){
 		}
 	}
 }
-
 
 
 func checkOrderbuttons(buttons chan int, shutdown chan bool){
