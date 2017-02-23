@@ -15,4 +15,4 @@ filer til sim:
 /src/driver/con_load.h
 /src/driver/simulator.con
 
-Endringer i io.init (kun kommentert ut gamle og lagt til nye under.
+Endringer i io.init
