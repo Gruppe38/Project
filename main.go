@@ -2,7 +2,7 @@ package main
 
 import (
 		. "./src/defs/"
-	//. "./src/driver/"
+	. "./src/driver/"
 	. "./src/network/localip"
 	. "./src/network/peers"
 	//	. "fmt"
@@ -10,6 +10,8 @@ import (
 
 func main() {
 	var state = Init
+
+	IoInit()
 
 
 	for {
