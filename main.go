@@ -1,35 +1,53 @@
 package main
 
 import (
-		. "./src/defs/"
-	. "./src/driver/"
+	. "./src/defs/"
+	. "./src/driver/elevatorControls"
+	. "./src/driver/io"
 	. "./src/network/localip"
 	. "./src/network/peers"
-	//	. "fmt"
+	//"time"
+	. "fmt"
 )
 
 func main() {
 	var state = Init
 
-	//IoInit()
-	SimInit()
+	IoInit()
+	//SimInit()
 
+	movementInstructions := make(chan ElevatorMovement)
+	statusReports := make(chan ElevatorStatus)
+	shutdownElevator := make(chan bool)
+	go LocalElevator(movementInstructions, statusReports, shutdownElevator)
+
+	buttonReports := make(chan int)
+	shutdownMonitor := make(chan bool)
+	go MonitorOrderbuttons(buttonReports, shutdownMonitor)
 
 	for {
-		switch state {
-			case Init:
-				continue
-			case Master:
-				continue
-			case Slave:
-				continue
-			case NoNetwork:
-				continue
-			case DeadElevator:
-				continue
+		select {
+		case v := <-buttonReports:
+			Println(v)
+		case v := <-statusReports:
+			Println(v)
 		}
 	}
 
+	for {
+		switch state {
+		case Init:
+			continue
+		case Master:
+			continue
+		case Slave:
+			continue
+		case NoNetwork:
+			continue
+		case DeadElevator:
+			continue
+		}
+	}
 
 	//elevatorIsAlive := IoInit()
 
