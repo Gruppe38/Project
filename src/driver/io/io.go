@@ -6,15 +6,17 @@ package driver
 */
 import "C"
 import . "../../defs/"
+import . "fmt"
 
 func IoInit() bool {
-	success := bool(int(C.io_init()) != 1)
+	success := bool(int(C.io_init()) == 1)
 
 	if success {
 		for i := 0; i < N_FLOOR; i++ {
 			for j := 0; j < 3; j++ {
 				//Avoding down for first floor and up for last floor
 				if !(i == 0 && j == 1) && !(i == N_FLOOR-1 && j == 0) {
+					Println("her", LightMatrix[i][j])
 					ClearBit(LightMatrix[i][j])
 				}
 			}
@@ -24,13 +26,14 @@ func IoInit() bool {
 		ClearBit(FLOOR_IND2)
 		ClearBit(LIGHT_STOP)
 		ClearBit(DOOR_OPEN)
+		Println(ReadBit(DOOR_OPEN))
 	}
 	return success
 
 }
 
 func SimInit() bool {
-	success := bool(int(C.sim_init()) != 1)
+	success := bool(int(C.sim_init()) == 1)
 	return success
 }
 

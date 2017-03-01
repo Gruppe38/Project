@@ -10,6 +10,13 @@ type ElevatorMovement struct {
 	TargetFloor int
 }
 
+type StatusMessage struct {
+	Message        ElevatorStatus
+	ElevatorID     int
+	TargetElevator int
+	MessageID      int //set by network module
+}
+
 type ElevatorStatus struct {
 	Dir         bool
 	LastFloor   int
@@ -17,7 +24,7 @@ type ElevatorStatus struct {
 	AtFloor     bool
 }
 
-type ElevatorQueue struct {
+/* ElevatorQueue struct {
 	Orders [N_FLOOR][3]bool
 }
 
@@ -25,11 +32,23 @@ type OrderQueue struct {
 	Elevator1 ElevatorQueue
 	Elevator2 ElevatorQueue
 	Elevator3 ElevatorQueue
+}*/
+
+type ButtonMessage struct {
+	Message        int
+	ElevatorID     int
+	TargetElevator int
+	MessageID      int //set by network module
+}
+
+type OrderQueue struct {
+	Elevator [3]map[int]bool
 }
 
 type OrderMessage struct {
-	TargetElevator int
 	Message        OrderQueue
+	ElevatorID     int
+	TargetElevator int
 	MessageID      int //set by network module
 }
 

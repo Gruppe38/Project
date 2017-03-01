@@ -13,7 +13,7 @@ import (
 func main() {
 	var state = Init
 
-	IoInit()
+	Println(IoInit())
 	//SimInit()
 
 	movementInstructions := make(chan ElevatorMovement)
@@ -25,15 +25,15 @@ func main() {
 	shutdownMonitor := make(chan bool)
 	go MonitorOrderbuttons(buttonReports, shutdownMonitor)
 
-	for {
+	/*for {
 		select {
 		case v := <-buttonReports:
 			Println(v)
 		case v := <-statusReports:
 			Println(v)
 		}
-	}
-
+	}*/
+	movementInstructions <- ElevatorMovement{true, 3}
 	for {
 		switch state {
 		case Init:

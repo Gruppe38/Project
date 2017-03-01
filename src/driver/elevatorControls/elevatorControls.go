@@ -10,11 +10,11 @@ import (
 // Setter motorhastighet og retning, dørlys og timer
 // Mangler timerfunksjonalitet
 
-func LocalElevator(movementInstructions chan ElevatorMovement, reportStatus chan ElevatorStatus, shutdown chan bool) {
+func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan ElevatorStatus, shutdown chan bool) {
 
 	currentFloorShutdown := make(chan bool)
 	currentFloorChan := make(chan int)
-	go currentFloor(currentFloorChan, reportStatus, currentFloorShutdown)
+	go currentFloor(currentFloorChan, statusReport, currentFloorShutdown)
 
 	doorTimer := time.NewTimer(3 * time.Second)
 	doorTimer.Stop()
@@ -27,7 +27,7 @@ func LocalElevator(movementInstructions chan ElevatorMovement, reportStatus chan
 		select {
 		case instruction := <-movementInstructions:
 			targetFloor = instruction.TargetFloor
-
+			Println(targetFloor)
 			if instruction.Dir {
 				driver.SetBit(MOTORDIR)
 			} else {
@@ -68,7 +68,7 @@ func LocalElevator(movementInstructions chan ElevatorMovement, reportStatus chan
 	}
 }
 
-func currentFloor(currentFloorChan chan int, reportStatus chan ElevatorStatus, shutdownChan chan bool) {
+func currentFloor(currentFloorChan chan int, statusReport chan ElevatorStatus, shutdownChan chan bool) {
 
 	last := -1
 	quit := false
@@ -83,7 +83,7 @@ func currentFloor(currentFloorChan chan int, reportStatus chan ElevatorStatus, s
 		case <-watchDog.C:
 			timeout = true
 			status = ElevatorStatus{driver.ReadBit(MOTORDIR), last, !timeout, false}
-			reportStatus <- status
+			statusReport <- status
 		default:
 			i := checkSensors()
 			switch i {
@@ -94,16 +94,16 @@ func currentFloor(currentFloorChan chan int, reportStatus chan ElevatorStatus, s
 				idle := driver.ReadAnalog(MOTOR) == 0
 				if i == -1 {
 					watchDog.Reset(5 * time.Second)
-					status = ElevatorStatus{driver.ReadBit(MOTORDIR), last, !timeout, false, idle}
+					status = ElevatorStatus{driver.ReadBit(MOTORDIR), last, !timeout, idle}
 				} else {
 					if !watchDog.Stop() && !timeout && i == -1 {
 						<-watchDog.C
 					}
 					timeout = false
-					status = ElevatorStatus{driver.ReadBit(MOTORDIR), i, !timeout, true, idle}
+					status = ElevatorStatus{driver.ReadBit(MOTORDIR), i, !timeout, idle}
 				}
 				last = i
-				reportStatus <- status
+				statusReport <- status
 			}
 		}
 	}
@@ -161,6 +161,7 @@ func MonitorOrderbuttons(buttons chan int, shutdown chan bool) {
 				if !(i == 0 && j == 1) && !(i == N_FLOOR-1 && j == 0) {
 					currentButton := OrderButtonMatrix[i][j]
 					if driver.ReadBit(currentButton) {
+						Println(currentButton)
 						noButtonsPressed = false
 						if currentButton != last {
 							buttons <- currentButton
