@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+
 	//var state = Init
 
 	//elevatorIsAlive := IoInit()
