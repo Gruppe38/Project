@@ -33,7 +33,7 @@ func main() {
 			Println(v)
 		}
 	}*/
-	movementInstructions <- ElevatorMovement{true, 3}
+	movementInstructions <- ElevatorMovement{false, 3}
 	for {
 		switch state {
 		case Init:

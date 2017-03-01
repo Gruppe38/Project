@@ -27,7 +27,6 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 		select {
 		case instruction := <-movementInstructions:
 			targetFloor = instruction.TargetFloor
-			Println(targetFloor)
 			if instruction.Dir {
 				driver.SetBit(MOTORDIR)
 			} else {

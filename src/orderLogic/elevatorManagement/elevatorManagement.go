@@ -50,6 +50,7 @@ func createOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 
 func calculateCost(orders map[int]bool{}, status ElevatorStatus, button int) int {
 	cost := 9999
+	
 }
 
 
