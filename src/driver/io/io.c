@@ -1,8 +1,17 @@
 #include <comedilib.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <pthread.h>
+
 
 #include "io.h"
-#include "commBits.h"
+#include "channels.h"
 #include <stdio.h>
+#include "con_load.h"
+
 
 
 static comedi_t *it_g = NULL;
@@ -26,6 +35,40 @@ int i = 0;
     }
 
     return (status == 0);
+}
+
+static int sockfd;
+static pthread_mutex_t sockmtx;
+
+int sim_init(void) {
+        char ip[16] = {0};
+        char port[8] = {0};
+        con_load("simulator.con",
+            con_val("com_ip",   ip,   "%s")
+            con_val("com_port", port, "%s")
+        )
+        
+        pthread_mutex_init(&sockmtx, NULL);
+    
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        assert(sockfd != -1 && "Unable to set up socket");
+
+        struct addrinfo hints = {
+            .ai_family      = AF_UNSPEC, 
+            .ai_socktype    = SOCK_STREAM, 
+            .ai_protocol    = IPPROTO_TCP,
+        };
+        struct addrinfo* res;
+        getaddrinfo(ip, port, &hints, &res);
+
+        int fail = connect(sockfd, res->ai_addr, res->ai_addrlen);
+        assert(fail == 0 && "Unable to connect to simulator server");
+
+        freeaddrinfo(res);
+
+        send(sockfd, (char[4]) {0}, 4, 0);
+	
+	return 1;
 }
 
 

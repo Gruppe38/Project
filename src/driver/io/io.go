@@ -5,17 +5,21 @@ package driver
 #include "io.h"
 */
 import "C"
-import . "./commBits/"
+import . "../../defs/"
 
 func IoInit() bool {
 	success := bool(int(C.io_init()) != 1)
 
 	if success {
 		for i := 0; i < N_FLOOR; i++ {
-			for j := 0; j < 3; i++ {
-				ClearBit(LightMatrix[i][j])
+			for j := 0; j < 3; j++ {
+				//Avoding down for first floor and up for last floor
+				if !(i == 0 && j == 1) && !(i == N_FLOOR-1 && j == 0) {
+					ClearBit(LightMatrix[i][j])
+				}
 			}
 		}
+		WriteAnalog(MOTOR, 0)
 		ClearBit(FLOOR_IND1)
 		ClearBit(FLOOR_IND2)
 		ClearBit(LIGHT_STOP)
@@ -23,6 +27,11 @@ func IoInit() bool {
 	}
 	return success
 
+}
+
+func SimInit() bool {
+	success := bool(int(C.sim_init()) != 1)
+	return success
 }
 
 func SetBit(channel int) {

@@ -1,0 +1,5 @@
+package elevatorManagement
+
+import (
+	. "../elevatorManagement/"
+)
