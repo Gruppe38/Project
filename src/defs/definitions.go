@@ -84,7 +84,7 @@ const SENSOR4 = (0x200 + 7)
 
 //out port 3
 const PORT3 = 3
-const MOTORDIR = (0x300 + 15)
+const MOTORDIR = (0x300 + 15) //FALSE == OPP, TRUE == NED
 const LIGHT_STOP = (0x300 + 14)
 const LIGHT_COMMAND1 = (0x300 + 13)
 const LIGHT_COMMAND2 = (0x300 + 12)
