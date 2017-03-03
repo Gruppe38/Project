@@ -14,7 +14,7 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 
 	currentFloorShutdown := make(chan bool)
 	currentFloorChan := make(chan int)
-	go currentFloor(currentFloorChan, statusReport, currentFloorShutdown)
+	go watchElevator(currentFloorChan, statusReport, currentFloorShutdown)
 
 	doorTimer := time.NewTimer(3 * time.Second)
 	doorTimer.Stop()
@@ -67,8 +67,8 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 	}
 }
 
-func currentFloor(currentFloorChan chan int, statusReport chan ElevatorStatus, shutdownChan chan bool) {
 
+func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus, shutdownChan chan bool) {
 	last := -1
 	quit := false
 	timeout := false

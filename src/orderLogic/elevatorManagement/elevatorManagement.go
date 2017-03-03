@@ -11,6 +11,10 @@ import (
 
 //set dir og floor
 
+//statusReport inneholder heistatus, kommer fra broadcastElevatorStatus
+//CompletedOrders Ikke skrevet andre enden enda
+//newOrders kommer fra watchIncommingOrders via nettverk
+//orderQueueReport sendes via nettverk, til bland annet createCurrentQueue
 func createOrderQueue(statusReport chan StatusMessage, completedOrders chan ButtonMessage, 
 	 					newOrders chan ButtonMessage, orderQueueReport chan OrderQueue){
 	orders := OrderQueue{}
@@ -53,9 +57,11 @@ func calculateCost(orders map[int]bool{}, status ElevatorStatus, button int) int
 	
 }
 
-
+//statusReport inneholder heistatus, kommer fra watchElevator, som får kannalen via LocalElevator
+//Send 1 til createOrderQueue, via nettverk
+//send2 til setTargetFloorDIr, ikek skrevet enda. 
 func broadcastElevatorStatus(statusReport, send1, send2 chan ElevatorStatus) {
-	quit := false
+	quit := false**
 	for !quit {
 		select {
 		case status, t := <-statusReport:
@@ -71,34 +77,36 @@ func broadcastElevatorStatus(statusReport, send1, send2 chan ElevatorStatus) {
 	}
 }
 
-func watchIncommingOrders(buttonReports chan int, confirmedQueue chan map[int]bool, forwardElevatorQueue chan int) {
+//
+//
+//forwardOrders sender via nettverket, til createOrderQueue
+func watchIncommingOrders(buttonReports chan int, confirmedQueue chan map[int]bool, forwardOrders chan int) {
 	currentQueue := make(map[int]bool)
 	//Relevant om master forsvinner
-	nonConfirmedQueue := make(map[int]bool)
 	for {
 		select {
 		case button := <-buttonReports:
-			if !currentQueue[button]|| nonConfirmedQueue[button]{
+			if !currentQueue[button]{
 				currentQueue[button] = true
 				nonConfirmedQueue[button] = true
-				forwardElevatorQueue <- button
+				forwardOrders <- button
 			}
-		case orderQueue := <-confirmedQueue:
-			currentQueue = orderQueue
-			for i := 0; i < N_FLOOR; i++ {
+		case currentQueue := <-confirmedQueue:
+			
+/*			for i := 0; i < N_FLOOR; i++ {
 				for j := 0; j < 3; j++{
 					button := OrderButtonMatrix[i][j]
 					if currentQueue[button] {
 						nonConfirmedQueue[button] = false
 					}
 				}
-			}
+			}*/
 		}
 	}
 }
 
 
-func createCurrentQueue(orderQueueReports chan OrderQueue, send1 chan map[int]bool), send2 chan map[int]bool)){
+func createCurrentQueue(orderQueueReports chan OrderQueue, send1 chan map[int]bool){
 	for{
 		select{
 		case orderQueue := <-orderQueueReports:
