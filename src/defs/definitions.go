@@ -7,6 +7,7 @@ type HelloMsg struct {
 
 type ElevatorMovement struct {
 	Dir         bool
+	NextDir 	bool
 	TargetFloor int
 }
 
@@ -20,8 +21,9 @@ type StatusMessage struct {
 type ElevatorStatus struct {
 	Dir         bool
 	LastFloor   int
-	ActiveMotor bool
+	ActiveMotor bool //kanskje endre navn
 	AtFloor     bool
+	DoorOpen 	bool
 }
 
 /* ElevatorQueue struct {

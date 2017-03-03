@@ -3,6 +3,7 @@ package elevatorManagement
 import (
 	. "../../defs/"
 	"../../driver/io/"
+	"math"
 )
 
 //Ovvervåke utførte ordre
@@ -53,15 +54,132 @@ func createOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 }
 
 func calculateCost(orders map[int]bool{}, status ElevatorStatus, button int) int {
-	cost := 9999
-	
+	buttonFloor, buttonType := getButtonIndex(button)
+	buttonElevatorSameDir := compareButtonAndElevatorDir(buttonType, status.Dir)
+	elevatorFloor := -1
+	if status.AtFloor {
+		elevatorFloor = status.LastFloor
+	} else {
+		if status.Dir{
+			elevatorFloor = status.LastFloor - 1
+		} else {
+			elevatorFloor = status.LastFloor + 1
+		}
+	}
+	buttonIndex := -1
+	switch buttonType {
+	case 0:
+		buttonIndex = getDistanceIndex(buttonFloor, false)
+	case 1:
+		buttonIndex = getDistanceIndex(buttonFloor, true)
+	case 2:
+		buttonIndex = int(math.Min(float64(getDistanceIndex(buttonFloor, false)),float64(getDistanceIndex(buttonFloor, false))))
+	}
+	distanceCost := math.Abs(getDistanceIndex(elevatorFloor,status.Dir)-buttonIndex)
+
+	//Distansekostnad, 3 per snuing.
+}
+
+func getDistanceIndex(floor int, dir bool) int {
+	if dir {
+		return 7 - floor
+	} else {
+		return floor -1
+	}
+}
+
+func compareButtonAndElevatorDir(buttonType int, elevatorDir bool) bool {
+	if buttonType == 2 {
+		return true
+	}
+	if elevatorDir {
+		return buttonType == 1
+	} else {
+		return buttonType == 0
+	}
 }
 
 //statusReport fra broadcastElevator
 //OrderMessage fra createOrderQueue via nettverket
 //movementInstructions sender til LocalElevator
 func Destination(statusReport chan ElevatorStatus, orders chan OrderMessage, movementInstructions chan ElevatorMovement){
-	//Set target floor og dir for the elevator to complete orders.
+	status := ElevatorStatus{}
+	myOrders := make(map[int]bool)
+	for {
+		select{
+		case status = <- statusReport:
+			instructions := calculateDestination(status, myOrders)
+			if instructions.TargetFloor != -1 {
+				movementInstructions <- instructions
+			}
+		case orders := <- OrderMessage:
+			myOrders = orders.Message[orders.TargetElevator]
+			instructions := calculateDestination(status, myOrders)
+			if instructions.TargetFloor != -1 {
+				movementInstructions <- instructions
+			}
+		}
+	}
+}
+
+func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMovement{
+	empty := true
+	orderButtonMatrix := [N_FLOOR][3]bool
+	for key, value := range orders{
+		if value{
+			empty = false
+			i,j := getButtonIndex(key)
+			orderButtonMatrix[i][j] = true
+		}
+	}
+	if empty {
+		return ElevatorMovement{status.Dir, status.Dir, -1}
+	}
+	instructions := findNextOrder(status ElevatorStatus, orderButtonMatrix)
+	if instructions.TargetFloor == -1 {
+		status.Dir = !status.Dir
+		instructions = findNextOrder(status ElevatorStatus, orderButtonMatrix)
+	}
+	return instructions
+}
+
+func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) ElevatorMovement{
+	switch status.Dir{
+	case true:
+		if status.AtFloor{
+			i:= status.LastFloor
+		} else {
+			i:= status.LastFloor - 1
+		}
+		for i;i>=0;i--{
+			if orderButtonMatrix[i][1] || orderButtonMatrix[i][2] {
+				return ElevatorMovement{status.Dir, status.Dir, i}
+			}
+		}
+		for i;i<status.LastFloor;i++{
+			if orderButtonMatrix[i][0] {
+				return ElevatorMovement{status.Dir, !status.Dir, i}
+			}
+		}
+
+	case false:
+		if status.AtFloor{
+			i:= status.LastFloor
+		} else {
+			i:= status.LastFloor + 1
+		}
+		for i;i<N_FLOOR;i++{
+			if orderButtonMatrix[i][0] || orderButtonMatrix[i][2] {
+				return ElevatorMovement{status.Dir,status.Dir, i}
+			}
+		}
+		for i;i>=status.LastFloor;i--{
+			if orderButtonMatrix[i][0] {
+				return ElevatorMovement{status.Dir, !status.Dir, i}
+			}
+		}
+	}
+	return ElevatorMovement{status.Dir, status.Dir, -1}
 }
 
 //statusReport inneholder heistatus, kommer fra watchElevator, som får kannalen via LocalElevator

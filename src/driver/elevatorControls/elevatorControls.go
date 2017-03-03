@@ -8,25 +8,26 @@ import (
 )
 
 // Setter motorhastighet og retning, dørlys og timer
-// Mangler timerfunksjonalitet
+//movementInstructions fra Destination
+//statusReport brukes ikke av denne funkjsonen
+func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan ElevatorStatus) {
 
-func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan ElevatorStatus, shutdown chan bool) {
-
-	currentFloorShutdown := make(chan bool)
 	currentFloorChan := make(chan int)
-	go watchElevator(currentFloorChan, statusReport, currentFloorShutdown)
+	go watchElevator(currentFloorChan, statusReport)
 
 	doorTimer := time.NewTimer(3 * time.Second)
 	doorTimer.Stop()
 	doorOpen := false
 	waitingForDoor := false
 	targetFloor := 0
+	nextDir := false
 	quit := false
 
 	for !quit {
 		select {
 		case instruction := <-movementInstructions:
 			targetFloor = instruction.TargetFloor
+			nextDir = status.NextDir
 			if instruction.Dir {
 				driver.SetBit(MOTORDIR)
 			} else {
@@ -50,12 +51,12 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 				doorTimer.Reset(3 * time.Second)
 				doorOpen = true
 				driver.SetBit(DOOR_OPEN)
+				if nextDir {
+					driver.SetBit(MOTORDIR)
+				} else {
+					driver.ClearBit(MOTORDIR)
+				}
 			}
-
-		case <-shutdown:
-			currentFloorShutdown <- true
-			quit = true
-
 		case <-doorTimer.C:
 			doorOpen = false
 			driver.ClearBit(DOOR_OPEN)
@@ -69,21 +70,22 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 
 //currentFloorChan, sender til localElevator
 //statusReport, sender til boradcastElevatorStatus
-//shutdownChan, kommer fra LocalElevator, blir "aktivert" når LocElev stenges.
-func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus, shutdownChan chan bool) {
+func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) {
 	last := -1
 	quit := false
 	timeout := false
+	lastDir := false
+	doorOpen := false
 	var status ElevatorStatus
 	watchDog := time.NewTimer(5 * time.Second)
 	watchDog.Stop()
 	for !quit {
 		select {
-		case <-shutdownChan:
-			quit = true
 		case <-watchDog.C:
 			timeout = true
-			status = ElevatorStatus{driver.ReadBit(MOTORDIR), last, !timeout, false}
+			lastDir = driver.ReadBit(MOTORDIR)
+			doorOpen = driver.ReadBit(DOOR_OPEN)
+			status = ElevatorStatus{lastDir, last, !timeout, false, doorOpen}
 			statusReport <- status
 		default:
 			i := checkSensors()
@@ -92,19 +94,26 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus, 
 				continue
 			default:
 				currentFloorChan <- i
+				lastDir = driver.ReadBit(MOTORDIR)
+				doorOpen = driver.ReadBit(DOOR_OPEN)
 				idle := driver.ReadAnalog(MOTOR) == 0
 				if i == -1 {
 					watchDog.Reset(5 * time.Second)
-					status = ElevatorStatus{driver.ReadBit(MOTORDIR), last, !timeout, idle}
+					status = ElevatorStatus{lastDir, last, !timeout, idle, doorOpen}
 				} else {
 					if !watchDog.Stop() && !timeout && i == -1 {
 						<-watchDog.C
 					}
 					timeout = false
-					status = ElevatorStatus{driver.ReadBit(MOTORDIR), i, !timeout, idle}
+					status = ElevatorStatus{lastDir, i, !timeout, idle, doorOpen}
 				}
 				last = i
 				statusReport <- status
+			}
+			if lastDir != driver.ReadBit(MOTORDIR) || doorOpen != river.ReadBit(DOOR_OPEN){
+				lastDir = driver.ReadBit(MOTORDIR)
+				doorOpen = river.ReadBit(DOOR_OPEN)
+				status = ElevatorStatus{lastDir, i, !timeout, idle, doorOpen}
 			}
 		}
 	}
@@ -153,7 +162,8 @@ func timer3(start chan bool, ask chan bool, shutdownChan chan bool){
 }
 */
 
-func MonitorOrderbuttons(buttons chan int, shutdown chan bool) {
+//buttons sender til watchIncommingOrders
+func MonitorOrderbuttons(buttons chan int) {
 	last := -1
 	for {
 		noButtonsPressed := true
