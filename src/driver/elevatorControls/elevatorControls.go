@@ -67,7 +67,9 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 	}
 }
 
-
+//currentFloorChan, sender til localElevator
+//statusReport, sender til boradcastElevatorStatus
+//shutdownChan, kommer fra LocalElevator, blir "aktivert" når LocElev stenges.
 func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus, shutdownChan chan bool) {
 	last := -1
 	quit := false

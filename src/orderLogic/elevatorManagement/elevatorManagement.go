@@ -11,7 +11,7 @@ import (
 
 //set dir og floor
 
-//statusReport inneholder heistatus, kommer fra broadcastElevatorStatus
+//statusReport inneholder heistatus, kommer fra broadcastElevatorStatus via nettverk
 //CompletedOrders Ikke skrevet andre enden enda
 //newOrders kommer fra watchIncommingOrders via nettverk
 //orderQueueReport sendes via nettverk, til bland annet createCurrentQueue
@@ -42,10 +42,10 @@ func createOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 						}
 					}
 				}
-				if i == -1{
+				if cheapestElevator == -1{
 					break
 				}
-				orders.Elevator[i][order.Message] = true
+				orders.Elevator[cheapestElevator][order.Message] = true
 				orderQueueReport <- orders
 			}
 		}
@@ -57,9 +57,16 @@ func calculateCost(orders map[int]bool{}, status ElevatorStatus, button int) int
 	
 }
 
+//statusReport fra broadcastElevator
+//OrderMessage fra createOrderQueue via nettverket
+//movementInstructions sender til LocalElevator
+func Destination(statusReport chan ElevatorStatus, orders chan OrderMessage, movementInstructions chan ElevatorMovement){
+	//Set target floor og dir for the elevator to complete orders.
+}
+
 //statusReport inneholder heistatus, kommer fra watchElevator, som får kannalen via LocalElevator
 //Send 1 til createOrderQueue, via nettverk
-//send2 til setTargetFloorDIr, ikek skrevet enda. 
+//send2 til setTargetFloorDIr, ikke skrevet enda. 
 func broadcastElevatorStatus(statusReport, send1, send2 chan ElevatorStatus) {
 	quit := false**
 	for !quit {
@@ -77,8 +84,8 @@ func broadcastElevatorStatus(statusReport, send1, send2 chan ElevatorStatus) {
 	}
 }
 
-//
-//
+//buttonReports fra MonitorOrderbuttons
+//confirmedQueue fra createCurrentQueue
 //forwardOrders sender via nettverket, til createOrderQueue
 func watchIncommingOrders(buttonReports chan int, confirmedQueue chan map[int]bool, forwardOrders chan int) {
 	currentQueue := make(map[int]bool)
@@ -105,8 +112,9 @@ func watchIncommingOrders(buttonReports chan int, confirmedQueue chan map[int]bo
 	}
 }
 
-
-func createCurrentQueue(orderQueueReports chan OrderQueue, send1 chan map[int]bool){
+//orderQueueReports fra CreateOrderQueue via nettverk
+//confirmedQueue sender til watchIncommingOrders
+func createCurrentQueue(orderQueueReports chan OrderMessage, confirmedQueue chan map[int]bool){
 	for{
 		select{
 		case orderQueue := <-orderQueueReports:
@@ -114,16 +122,15 @@ func createCurrentQueue(orderQueueReports chan OrderQueue, send1 chan map[int]bo
 				for j := 0; j < N_FLOOR; j++ {
 					for k := 0; k < 2; k++{
 						button := OrderButtonMatrix[j][k]
-						currentQueue = orderQueue.Elevator[i][button]
+						currentQueue = orderQueue.Message.Elevator[i][button]
 					}
-					//Huske å gjøre hver heis til nr 1 etter mottat melding over nettverk
-					if i == 0 {
+					if i == orderQueue.TargetElevator {
 						button := OrderButtonMatrix[j][2]
-						currentQueue[button] = orderQueue.Elevator[i][button]
+						currentQueue[button] = orderQueue.Message.Elevator[i][button]
 					}
 				}
 			}
-			send1 <- currentQueue
+			confirmedQueue <- currentQueue
 			toggleLights(currentQueue)
 		}
 	}
