@@ -4,48 +4,94 @@ import (
 	. "./src/defs/"
 	. "./src/driver/elevatorControls"
 	. "./src/driver/io"
-	. "./src/network/localip"
+	//. "./src/network/localip"
+	. "./src/network/netFwd"
 	. "./src/network/peers"
-	//"time"
-	. "fmt"
+	. "./src/orderLogic/elevatorManagement"
+	//. "fmt"
+	"time"
 )
 
 func main() {
 	var state = Init
 
-	Println(IoInit())
+	sucess := IoInit()
 	//SimInit()
 
-	movementInstructions := make(chan ElevatorMovement)
-	statusReports := make(chan ElevatorStatus)
-	shutdownElevator := make(chan bool)
-	go LocalElevator(movementInstructions, statusReports, shutdownElevator)
+	if sucess {
+		peerUpdateCh := make(chan PeerUpdate)
+		peerTxEnable := make(chan bool)
 
-	buttonReports := make(chan int)
-	shutdownMonitor := make(chan bool)
-	go MonitorOrderbuttons(buttonReports, shutdownMonitor)
+		go Receiver(12038, peerUpdateCh)
+		//id := GetProcessID()
 
-	/*for {
+		timer := time.NewTimer(45 * time.Millisecond)
+		numberOfPeers := 0
 		select {
-		case v := <-buttonReports:
-			Println(v)
-		case v := <-statusReports:
-			Println(v)
+		case p := <-peerUpdateCh:
+			numberOfPeers = len(p.Peers)
+		case <-timer.C:
+			break
 		}
-	}*/
-	movementInstructions <- ElevatorMovement{false, 3}
-	for {
-		switch state {
-		case Init:
-			continue
-		case Master:
-			continue
-		case Slave:
-			continue
-		case NoNetwork:
-			continue
-		case DeadElevator:
-			continue
+		id := string(numberOfPeers + 1)
+		go Transmitter(12038, id, peerTxEnable)
+
+		movementInstructions := make(chan ElevatorMovement)
+		statusReports := make(chan ElevatorStatus)
+		statusReportsSend1 := make(chan ElevatorStatus)
+		statusReportsSend2 := make(chan ElevatorStatus)
+		statusReportsSend3 := make(chan ElevatorStatus)
+
+		buttonReports := make(chan int)
+		myIDSend := make(chan int)
+		myIDRecieve := make(chan int)
+		masterID := make(chan int)
+		buttonNewSend := make(chan int)
+		buttonCompletedSend := make(chan int)
+		orderQueueReport := make(chan OrderQueue)
+
+		statusMessage := make(chan StatusMessage)
+		buttonNewRecieve := make(chan ButtonMessage)
+		buttonCompletedRecieve := make(chan ButtonMessage)
+		orderMessage := make(chan OrderMessage)
+		orderMessageSend1 := make(chan OrderMessage)
+		orderMessageSend2 := make(chan OrderMessage)
+		confirmedQueue := make(chan map[int]bool)
+
+		go LocalElevator(movementInstructions, statusReports)
+		go MonitorOrderbuttons(buttonReports)
+		go CreateOrderQueue(statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport)
+
+		go SendToNetwork(myIDSend, masterID, statusReportsSend1, buttonNewSend, buttonCompletedSend, orderQueueReport)
+		go RecieveFromNetwork(myIDRecieve, statusMessage, buttonNewRecieve, buttonCompletedRecieve, orderMessage)
+
+		go Destination(statusReportsSend2, orderMessageSend1, movementInstructions)
+		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
+		go BroadcastOrderMEessage(orderMessage, orderMessageSend1, orderMessageSend2)
+		go WatchCompletedOrders(statusReportsSend3, buttonCompletedSend)
+		go WatchIncommingOrders(buttonReports, confirmedQueue, buttonNewSend)
+		go CreateCurrentQueue(orderMessageSend2, confirmedQueue)
+		/*for {
+			select {
+			case v := <-buttonReports:
+				Println(v)
+			case v := <-statusReports:
+				Println(v)
+			}
+		}*/
+		for {
+			switch state {
+			case Init:
+				continue
+			case Master:
+				continue
+			case Slave:
+				continue
+			case NoNetwork:
+				continue
+			case DeadElevator:
+				continue
+			}
 		}
 	}
 
@@ -54,13 +100,4 @@ func main() {
 	/*if elevatorIsAlive {
 		state = DeadElevator
 	}*/
-
-	id := GetProcessID()
-
-	peerUpdateCh := make(chan PeerUpdate)
-	peerTxEnable := make(chan bool)
-
-	go Transmitter(12038, id, peerTxEnable)
-	go Receiver(12038, peerUpdateCh)
-
 }

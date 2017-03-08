@@ -27,7 +27,7 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 		select {
 		case instruction := <-movementInstructions:
 			targetFloor = instruction.TargetFloor
-			nextDir = status.NextDir
+			nextDir = instruction.NextDir
 			if instruction.Dir {
 				driver.SetBit(MOTORDIR)
 			} else {
@@ -110,9 +110,10 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 				last = i
 				statusReport <- status
 			}
-			if lastDir != driver.ReadBit(MOTORDIR) || doorOpen != river.ReadBit(DOOR_OPEN){
+			if lastDir != driver.ReadBit(MOTORDIR) || doorOpen != driver.ReadBit(DOOR_OPEN) {
 				lastDir = driver.ReadBit(MOTORDIR)
-				doorOpen = river.ReadBit(DOOR_OPEN)
+				doorOpen = driver.ReadBit(DOOR_OPEN)
+				idle := driver.ReadAnalog(MOTOR) == 0
 				status = ElevatorStatus{lastDir, i, !timeout, idle, doorOpen}
 			}
 		}
@@ -172,9 +173,9 @@ func MonitorOrderbuttons(buttons chan int) {
 				if !(i == 0 && j == 1) && !(i == N_FLOOR-1 && j == 0) {
 					currentButton := OrderButtonMatrix[i][j]
 					if driver.ReadBit(currentButton) {
-						Println(currentButton)
 						noButtonsPressed = false
 						if currentButton != last {
+							Println("New button: ", currentButton)
 							buttons <- currentButton
 							last = currentButton
 						}

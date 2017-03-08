@@ -7,15 +7,22 @@ type HelloMsg struct {
 
 type ElevatorMovement struct {
 	Dir         bool
-	NextDir 	bool
+	NextDir     bool
 	TargetFloor int
+}
+
+type AckMessage struct {
+	Message        int64
+	Type           int //0=status,1=button,2=order
+	ElevatorID     int
+	TargetElevator int
 }
 
 type StatusMessage struct {
 	Message        ElevatorStatus
 	ElevatorID     int
 	TargetElevator int
-	MessageID      int //set by network module
+	MessageID      int64 //set by network module
 }
 
 type ElevatorStatus struct {
@@ -23,7 +30,7 @@ type ElevatorStatus struct {
 	LastFloor   int
 	ActiveMotor bool //kanskje endre navn
 	AtFloor     bool
-	DoorOpen 	bool
+	DoorOpen    bool
 }
 
 /* ElevatorQueue struct {
@@ -36,11 +43,13 @@ type OrderQueue struct {
 	Elevator3 ElevatorQueue
 }*/
 
+//MessageType true for nye ordre, false for utførte
 type ButtonMessage struct {
 	Message        int
+	MessageType    bool
 	ElevatorID     int
 	TargetElevator int
-	MessageID      int //set by network module
+	MessageID      int64 //set by network module
 }
 
 type OrderQueue struct {
@@ -51,7 +60,7 @@ type OrderMessage struct {
 	Message        OrderQueue
 	ElevatorID     int
 	TargetElevator int
-	MessageID      int //set by network module
+	MessageID      int64 //set by network module
 }
 
 const (
@@ -116,6 +125,7 @@ const LIGHT_DOWN1 = -1
 const LIGHT_UP4 = -1
 
 const N_FLOOR = 4
+const MAX_ELEVATORS = 3
 
 var LightMatrix = [N_FLOOR][3]int{
 	{LIGHT_UP1, LIGHT_DOWN1, LIGHT_COMMAND1},

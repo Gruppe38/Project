@@ -8,7 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
+	//"time"
 )
 
 // We define some custom struct to send over the network.
@@ -55,14 +55,14 @@ func main() {
 	go bcast.Receiver(14038, helloRx2)
 
 	// The example message. We just send one of these every second.
-	go func() {
+	/*go func() {
 		helloMsg := definitions.HelloMsg{"Hello from " + id, 0}
 		for {
 			helloMsg.Iter++
 			helloTx <- helloMsg
 			time.Sleep(1 * time.Second)
 		}
-	}()
+	}()*/
 
 	fmt.Println("Started")
 	for {
@@ -72,7 +72,7 @@ func main() {
 			fmt.Printf("  Peers:    %q\n", p.Peers)
 			fmt.Printf("  New:      %q\n", p.New)
 			fmt.Printf("  Lost:     %q\n", p.Lost)
-
+			fmt.Println(len(p.Peers))
 		case a := <-helloRx:
 			fmt.Printf("Receiveda: %#v\n", a)
 		case b := <-helloRx2:
