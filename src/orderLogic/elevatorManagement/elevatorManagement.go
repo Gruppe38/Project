@@ -21,24 +21,29 @@ func CreateOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 	orders := OrderQueue{}
 	activeElevators := [3]bool{}
 	elevatorStatus := [3]ElevatorStatus{}
+	Println("Running function CreateOrderQueue")
 	for {
 		select {
 		case status := <-statusReport:
+			Println("recieved statusReport in createOrderQueue(): ", status.ElevatorID)
 			elevatorStatus[status.ElevatorID-1] = status.Message
 			activeElevators[status.ElevatorID-1] = true
 		case order := <-completedOrders:
+			Println("recieved completedOrders in createOrderQueue(): ", order.Message)
 			i, _ := getButtonIndex(order.Message)
 			orders.Elevator[order.ElevatorID-1][order.Message] = false
 			orders.Elevator[order.ElevatorID-1][OrderButtonMatrix[i][2]] = false
 			orderQueueReport <- orders
 		case order := <-newOrders:
-			println("CreateOrderQueue got button: ", order.Message)
+			println("CreateOrderQueue got button(): ", order.Message)
 			if order.Message == BUTTON_COMMAND1 || order.Message == BUTTON_COMMAND2 ||
-				order.Message == BUTTON_COMMAND3 || order.Message == BUTTON_COMMAND4 {
+						order.Message == BUTTON_COMMAND3 || order.Message == BUTTON_COMMAND4 {
+				println("newOrder is internal button")
 				orders.Elevator[order.ElevatorID-1][order.Message] = true
 			} else {
 				cheapestCost := 9999
 				cheapestElevator := -1
+				println("newOrder is external button")
 				for i, v := range activeElevators {
 					println("elevator #",i, "active =", v)
 					if v {
@@ -48,11 +53,10 @@ func CreateOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 					}
 				}
 				if cheapestElevator == -1 {
-					println("No active elevators, did not assign to any elevator")
+					Println("Order not assigned")
 					break
 				}
 				orders.Elevator[cheapestElevator][order.Message] = true
-				println("CreateOrderQueue assigned order to: ", cheapestElevator)
 				orderQueueReport <- orders
 				println("CreateOrderQueue assigned order to: ", cheapestElevator)
 			}
@@ -64,13 +68,17 @@ func CreateOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 func calculateCost(orders map[int]bool, status ElevatorStatus, button int) int {
 	buttonFloor, buttonType := getButtonIndex(button)
 	elevatorFloor := -1
+	Println("Running function calculateCost")
 	if status.AtFloor {
 		elevatorFloor = status.LastFloor
+		Println("Is at floor: ", elevatorFloor)
 	} else {
 		if status.Dir {
 			elevatorFloor = status.LastFloor - 1
+			Println("Is at floor: ", elevatorFloor)
 		} else {
 			elevatorFloor = status.LastFloor + 1
+			Println("Is at floor: ", elevatorFloor)
 		}
 	}
 	elevatorIndex := getDistanceIndex(elevatorFloor, status.Dir)
@@ -79,12 +87,15 @@ func calculateCost(orders map[int]bool, status ElevatorStatus, button int) int {
 	turnCost := 0
 	switch buttonType {
 	case 0:
+		Println("Calculating distanceCost for buttontype: DOWN/0")
 		buttonIndex = getDistanceIndex(buttonFloor, false)
 		distanceCost = elevatorIndex - buttonIndex
 	case 1:
+		Println("Calculating distanceCost for buttontype: UP/1")		
 		buttonIndex = getDistanceIndex(buttonFloor, true)
 		distanceCost = elevatorIndex - buttonIndex
 	case 2:
+		Println("Calculating distanceCost for buttontype: INTERNAL/2")
 		if elevatorIndex-getDistanceIndex(buttonFloor, false) > elevatorIndex-getDistanceIndex(buttonFloor, true) {
 			buttonIndex = getDistanceIndex(buttonFloor, true)
 		} else {
@@ -106,6 +117,7 @@ func calculateCost(orders map[int]bool, status ElevatorStatus, button int) int {
 }
 
 func getDistanceIndex(floor int, dir bool) int {
+	Println("Running function getDistanceIndex")
 	if dir {
 		return 7 - floor
 	} else {
@@ -128,26 +140,33 @@ func getDistanceIndex(floor int, dir bool) int {
 //OrderMessage fra createOrderQueue via nettverket
 //movementInstructions sender til LocalElevator
 func Destination(statusReport chan ElevatorStatus, orders chan OrderMessage, movementInstructions chan ElevatorMovement) {
+	Println("Running function Destination")
 	status := ElevatorStatus{}
 	myOrders := make(map[int]bool)
 	for {
 		select {
 		case status = <-statusReport:
+			Println("Recieved statusReport in Destination()")
 			instructions := calculateDestination(status, myOrders)
+			Println("calculateDestination() returned instructions: ", instructions)
 			if instructions.TargetFloor != -1 {
 				movementInstructions <- instructions
+				Println("Instructions sent on channel movementInstructions, only if instructions != -1")
 			}
 		case order := <-orders:
+			Println("Recieved orders in Destination")
 			myOrders = order.Message.Elevator[order.TargetElevator]
 			instructions := calculateDestination(status, myOrders)
 			if instructions.TargetFloor != -1 {
 				movementInstructions <- instructions
+				Println("Instructions sent on channel movementInstructions, only if instructions != -1")
 			}
 		}
 	}
 }
 
 func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMovement {
+	Println("Running function calculateDestination()")
 	empty := true
 	orderButtonMatrix := [N_FLOOR][3]bool{}
 	for key, value := range orders {
@@ -169,8 +188,12 @@ func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMo
 }
 
 func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) ElevatorMovement {
+	Println("Running function findNextOrder()")
+	Println("status.Dir: ", status.Dir)
+	Println("status.AtFloor: ", status.AtFloor)
 	switch status.Dir {
 	case true:
+		Println("This case runs if status.Dir is true")
 		if status.AtFloor {
 			for i := status.LastFloor; i >= 0; i-- {
 				if orderButtonMatrix[i][1] || orderButtonMatrix[i][2] {
@@ -196,6 +219,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 		}
 
 	case false:
+		Println("This case runs if status.Dir is false")
 		if status.AtFloor {
 			for i := status.LastFloor; i < N_FLOOR; i++ {
 				if orderButtonMatrix[i][0] || orderButtonMatrix[i][2] {
@@ -246,7 +270,7 @@ func BroadcastElevatorStatus(statusReport, send1, send2, send3 chan ElevatorStat
 	}
 }
 
-func BroadcastOrderMEessage(orderMessage, send1, send2 chan OrderMessage) {
+func BroadcastOrderMessage(orderMessage, send1, send2 chan OrderMessage) {
 	quit := false
 	for !quit {
 		select {
