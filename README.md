@@ -8,3 +8,6 @@ cd Documents/git/Simulator/Project/simulator/server
 rdmd sim_server.d
 
 Undersøke hva som skjer om vi er under 1,  over 4. Passe på at den aldri kjører dit selv. 
+
+Idé: endre messageID til å starte på 0 og telle oppover, delt for alle typer meldinger, men hver pc har sin egen teller. Eneste endring på mottaker side er at vi må ikke bare huske hvilke meldinger vi har sendt, men også hvem vi sendte dem til.
+  Mulighet som da åpner seg: Bare videresende ordermessage om den har høyere id (er nyere) en sist mottate. Dermed er vi sikret at en gammel ordermessage ikke overlagrer den gamle. 
