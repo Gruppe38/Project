@@ -37,6 +37,8 @@ int i = 0;
     return (status == 0);
 }
 
+//static elev_type elevatorType = ET_Simulation
+static elev_type elevatorType = ET_Simulation;
 static int sockfd;
 static pthread_mutex_t sockmtx;
 
@@ -73,7 +75,7 @@ int sim_init(void) {
 
 
 void io_set_bit(int channel) {
-    comedi_dio_write(it_g, channel >> 8, channel & 0xff, 1);
+		comedi_dio_write(it_g, channel >> 8, channel & 0xff, 1);
 }
 
 

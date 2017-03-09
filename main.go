@@ -15,8 +15,9 @@ import (
 func main() {
 	var state = Init
 
-	sucess := IoInit()
-	//SimInit()
+	//sucess := IoInit()
+	SimInit()
+	sucess := true
 
 	if sucess {
 		peerUpdateCh := make(chan PeerUpdate)
@@ -71,6 +72,11 @@ func main() {
 		go WatchCompletedOrders(statusReportsSend3, buttonCompletedSend)
 		go WatchIncommingOrders(buttonReports, confirmedQueue, buttonNewSend)
 		go CreateCurrentQueue(orderMessageSend2, confirmedQueue)
+
+		time.Sleep(500*time.Millisecond)
+		myIDSend <- 1
+		myIDRecieve <- 1
+		masterID <- 1
 		/*for {
 			select {
 			case v := <-buttonReports:

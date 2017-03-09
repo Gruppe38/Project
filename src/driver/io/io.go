@@ -3,9 +3,12 @@ package driver
 /*
 #cgo LDFLAGS: -lcomedi -lm -std=c99
 #include "io.h"
+#include "elev.h"
 */
 import "C"
 import . "../../defs/"
+
+var direction = 0
 
 func IoInit() bool {
 	success := bool(int(C.io_init()) == 1)
@@ -30,9 +33,45 @@ func IoInit() bool {
 }
 
 func SimInit() bool {
-	success := bool(int(C.sim_init()) == 1)
-	return success
+	C.elev_init()
+	return true
 }
+
+func SetDirection(val int){
+	direction = val
+}
+
+func SetMotor(value bool){
+	if value {
+		C.elev_set_motor_direction(C.int(direction))
+	}
+}
+
+func GetMotor() int{
+	return direction
+}
+
+func SetFloorInd(floor int){
+	C.elev_set_floor_indicator(C.int(floor))
+}
+
+func SetLamp(button int, floor int, value int){
+	C.elev_set_button_lamp(C.int(button),C.int(floor),C.int(value))
+}
+
+func SetDoor(value int){
+	C.elev_set_door_open_lamp(C.int(value))
+}
+
+func GetButtonSignal(button int, floor int) bool {
+	return int(C.elev_get_button_signal(C.int(button),C.int(floor))) != 0
+}
+
+func GetFloorSignal() int {
+	return int(C.elev_get_floor_sensor_signal())
+}
+
+
 
 func SetBit(channel int) {
 	C.io_set_bit(C.int(channel))

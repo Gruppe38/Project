@@ -32,13 +32,16 @@ func CreateOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 			orders.Elevator[order.ElevatorID-1][OrderButtonMatrix[i][2]] = false
 			orderQueueReport <- orders
 		case order := <-newOrders:
+			println("CreateOrderQueue got button: ", order.Message)
 			if order.Message == BUTTON_COMMAND1 || order.Message == BUTTON_COMMAND2 ||
 				order.Message == BUTTON_COMMAND3 || order.Message == BUTTON_COMMAND4 {
 				orders.Elevator[order.ElevatorID-1][order.Message] = true
 			} else {
 				cheapestCost := 9999
 				cheapestElevator := -1
+				println("here")
 				for i, v := range activeElevators {
+					println("elevator #",i, "active =", v)
 					if v {
 						if calculateCost(orders.Elevator[i], elevatorStatus[i], order.Message) < cheapestCost {
 							cheapestElevator = i
@@ -49,8 +52,11 @@ func CreateOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 					break
 				}
 				orders.Elevator[cheapestElevator][order.Message] = true
+				println("CreateOrderQueue assigned order to: ", cheapestElevator)
 				orderQueueReport <- orders
+				println("CreateOrderQueue assigned order to: ", cheapestElevator)
 			}
+			println("CreateOrderQueue assigned order to: ", order.ElevatorID)
 		}
 	}
 }

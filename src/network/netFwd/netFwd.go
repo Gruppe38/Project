@@ -17,9 +17,9 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 	me := <-myID
 	master := <-masterID
 
-	unconfirmedStatus := make(map[int64]StatusMessage)
-	unconfirmedButton := make(map[int64]ButtonMessage)
-	unconfirmedOrders := make(map[int64]OrderMessage)
+	//unconfirmedStatus := make(map[int64]StatusMessage)
+	//unconfirmedButton := make(map[int64]ButtonMessage)
+	//unconfirmedOrders := make(map[int64]OrderMessage)
 
 	statusMes := make(chan StatusMessage)
 	buttonMes := make(chan ButtonMessage)
@@ -34,35 +34,36 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 		case stat := <-status:
 			messageID := rand.Int63()
 			statMes := StatusMessage{stat, me, master, messageID}
-			unconfirmedStatus[messageID] = statMes
+			//unconfirmedStatus[messageID] = statMes
 			statusMes <- statMes
 		case button := <-buttonNew:
-			print("Network got button", button)
+			println("Network got button", button)
 			messageID := rand.Int63()
 			butMes := ButtonMessage{button, true, me, master, messageID}
-			unconfirmedButton[messageID] = butMes
+			//unconfirmedButton[messageID] = butMes
 			buttonMes <- butMes
-			print("Network sent button", button)
+			println("Network sent button", button)
 		case button := <-buttonCompleted:
 			messageID := rand.Int63()
 			butMes := ButtonMessage{button, false, me, master, messageID}
-			unconfirmedButton[messageID] = butMes
+			//unconfirmedButton[messageID] = butMes
 			buttonMes <- butMes
 		case order := <-orders:
 			messageID := rand.Int63()
 			ordMes := OrderMessage{order, me, master, messageID}
-			unconfirmedOrders[messageID] = ordMes
+			//unconfirmedOrders[messageID] = ordMes
 			ordersMes <- ordMes
 		case ack := <-ackRx:
 			if ack.TargetElevator == me {
-				switch ack.Type {
+				/*switch ack.Type {
 				case 0:
 					delete(unconfirmedStatus, ack.Message)
 				case 1:
 					delete(unconfirmedButton, ack.Message)
 				case 2:
 					delete(unconfirmedOrders, ack.Message)
-				}
+				}*/
+				break
 			}
 		case me = <-myID:
 			continue
@@ -76,7 +77,6 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 
 //myID, får id til heisen, må fåes rett etter oppstart, fra main
 func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan ButtonMessage, buttonCompleted chan ButtonMessage, orders chan OrderMessage) {
-	me := <-myID
 	sentAck := make(map[int64]bool)
 
 	statusMes := make(chan StatusMessage)
@@ -86,6 +86,22 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 
 	go bcast.Receiver(13038, statusMes, buttonMes, ordersMes)
 	go bcast.Transmitter(14038, ackTx)
+
+	me := -1
+	time.NewTimer(45*time.Millisecond)
+	ready := false
+	for !ready {
+		select {
+		case me = <-myID:
+			ready = true
+		case <- statusMes:
+			continue
+		case <- buttonMes:
+			continue
+		case <- ordersMes:
+			continue
+		}
+	}
 	//todo
 	//sjekk om melding er til meg
 	//Send bekreftelse
@@ -101,6 +117,7 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 				}
 			}
 		case button := <-buttonMes:
+			println("Network recieved button", button.Message)
 			if button.TargetElevator == me {
 				ackTx <- AckMessage{button.MessageID, 1, me, button.ElevatorID}
 				if !sentAck[button.MessageID] {
@@ -110,6 +127,7 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 					} else {
 						buttonCompleted <- button
 					}
+					println("Network forwarded button", button.Message)
 				}
 			}
 		case order := <-orders:

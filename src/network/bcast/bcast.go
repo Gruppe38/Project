@@ -18,8 +18,6 @@ func Transmitter(port int, chans ...interface{}) {
 	for range chans {
 		n++
 	}
-	list := [4]bool{true, true, true, true}
-	channelList := list[0:n]
 
 	selectCases := make([]reflect.SelectCase, n)
 	typeNames := make([]string, n)
@@ -33,32 +31,17 @@ func Transmitter(port int, chans ...interface{}) {
 
 	conn := conn.DialBroadcastUDP(port)
 	addr, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf("255.255.255.255:%d", port))
-
-	for n > 0 {
-		chosen, message, t := reflect.Select(selectCases)
-		if t {
-			buf, _ := json.Marshal(message.Interface())
-			//Adding "test" to data sent over network, attempting to extract this part at reciver
-			conn.WriteTo([]byte(typeNames[chosen]+string(buf)+generateID(message)), addr)
-		} else {
-			if channelList[chosen] {
-				fmt.Println("channel closed")
-				n--
-				channelList[chosen] = false
-			}
-
-		}
+	for {
+		chosen, value, _ := reflect.Select(selectCases)
+		buf, _ := json.Marshal(value.Interface())
+		conn.WriteTo([]byte(typeNames[chosen]+string(buf)), addr)
 	}
-	fmt.Println("Done")
 }
 
 // Matches type-tagged JSON received on `port` to element types of `chans`, then
 // sends the decoded value on the corresponding channel
 func Receiver(port int, chans ...interface{}) {
 	checkArgs(chans...)
-
-	test := make(chan HelloMsg)
-	go confirmMessages(test)
 
 	var buf [1024]byte
 	conn := conn.DialBroadcastUDP(port)
@@ -69,38 +52,14 @@ func Receiver(port int, chans ...interface{}) {
 			typeName := T.String()
 			if strings.HasPrefix(string(buf[0:n])+"{", typeName) {
 				v := reflect.New(T)
-
-				//Unmarshal the normal message, without "test"
-				json.Unmarshal(buf[len(typeName):n-len("test")], v.Interface())
-
-				a := buf[n-4 : n]
-				fmt.Println(string(a))
+				json.Unmarshal(buf[len(typeName):n], v.Interface())
 
 				reflect.Select([]reflect.SelectCase{{
 					Dir:  reflect.SelectSend,
 					Chan: reflect.ValueOf(ch),
 					Send: reflect.Indirect(v),
 				}})
-				x, _ := reflect.ValueOf(v).Interface().(HelloMsg)
-				test <- x
 			}
-		}
-
-	}
-}
-
-type HelloMsg struct {
-	Message string
-	Iter    int
-}
-
-func confirmMessages(chan1 <-chan HelloMsg) {
-	test := make(chan int)
-	go Transmitter(13039, test)
-	for {
-		select {
-		case a := <-chan1:
-			test <- a.Iter
 		}
 	}
 }
@@ -153,10 +112,4 @@ func checkArgs(chans ...interface{}) {
 			}
 		}
 	}
-}
-
-func generateID(message interface{}) string {
-	//fmt.Println(message.Interface())
-	fmt.Println(message)
-	return "test"
 }
