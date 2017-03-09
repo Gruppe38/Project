@@ -9,6 +9,8 @@ import "C"
 import . "../../defs/"
 
 var direction = 0
+var doorOpen = false
+var idle = true
 
 func IoInit() bool {
 	success := bool(int(C.io_init()) == 1)
@@ -44,7 +46,10 @@ func SetDirection(val int){
 func SetMotor(value bool){
 	if value {
 		C.elev_set_motor_direction(C.int(direction))
+	} else {
+		C.elev_set_motor_direction(C.int(0))
 	}
+	idle = !value
 }
 
 func GetMotor() int{
@@ -60,7 +65,10 @@ func SetLamp(button int, floor int, value int){
 }
 
 func SetDoor(value int){
+	doorOpen = value == 1
 	C.elev_set_door_open_lamp(C.int(value))
+
+	println("Setting door bit to",value, "doorOpen is", doorOpen)
 }
 
 func GetButtonSignal(button int, floor int) bool {
@@ -69,6 +77,14 @@ func GetButtonSignal(button int, floor int) bool {
 
 func GetFloorSignal() int {
 	return int(C.elev_get_floor_sensor_signal())
+}
+
+func GetDoorStatus() bool {
+	return doorOpen
+}
+
+func GetIdle() bool {
+	return idle
 }
 
 

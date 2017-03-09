@@ -26,12 +26,13 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 	for !quit {
 		select {
 		case instruction := <-movementInstructions:
+			Println("LocalElevator() got new instruction", instruction)
 			targetFloor = instruction.TargetFloor
 			nextDir = instruction.NextDir
 			if instruction.Dir {
-				driver.SetDirection(MOTORDIR)
+				driver.SetDirection(-1)
 			} else {
-				driver.SetDirection(MOTORDIR)
+				driver.SetDirection(1)
 			}
 
 			if checkSensors() != targetFloor && !doorOpen {
@@ -42,8 +43,9 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 			}
 
 		case floor := <-currentFloorChan:
-			Println(floor)
+			Println("LocalElevator() got a floor update", floor)
 			if targetFloor == floor {
+				Println("LocalElevator() door opened")
 				driver.SetMotor(false)
 				if !doorTimer.Stop() && doorOpen {
 					<-doorTimer.C
@@ -52,16 +54,18 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 				doorOpen = true
 				driver.SetDoor(1)
 				if nextDir {
-					driver.SetDirection(1)
+					driver.SetDirection(-1)
 				} else {
-					driver.SetDirection(0)
+					driver.SetDirection(1)
 				}
 			}
 		case <-doorTimer.C:
+			Println("LocalElevator() door closed")
 			doorOpen = false
 			driver.SetDoor(0)
 			if waitingForDoor {
-				driver.SetMotor(true)
+				Println("LocalElevator() starting motor after timer is done")
+				driver.SetMotor(true) 
 				waitingForDoor = false
 			}
 		}
@@ -84,19 +88,19 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 		case <-watchDog.C:
 			timeout = true
 			lastDir = driver.GetMotor()==1
-			doorOpen = true //kan ikke leses driver.ReadBit(DOOR_OPEN)
+			doorOpen = driver.GetDoorStatus()
 			status = ElevatorStatus{lastDir, last, !timeout, false, doorOpen}
 			statusReport <- status
 		default:
 			i := checkSensors()
 			switch i {
 			case last:
-				continue
+				break
 			default:
 				currentFloorChan <- i
 				lastDir = driver.GetMotor()==1
-				doorOpen = true //kan ikke leses driver.ReadBit(DOOR_OPEN)
-				idle := false //kan ikke leses driver.ReadAnalog(MOTOR) == 0
+				doorOpen = driver.GetDoorStatus()
+				idle := driver.GetIdle()
 				if i == -1 {
 					watchDog.Reset(5 * time.Second)
 					status = ElevatorStatus{lastDir, last, !timeout, idle, doorOpen}
@@ -110,11 +114,13 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 				last = i
 				statusReport <- status
 			}
-			if lastDir != (driver.GetMotor()==1) || doorOpen != true {
+			if (lastDir != (driver.GetMotor()==1)) || (doorOpen != driver.GetDoorStatus()) {
 				lastDir = driver.GetMotor()==1
-				doorOpen = true //kan ikke leses driver.ReadBit(DOOR_OPEN)
-				idle := false //kan ikke leses driver.ReadAnalog(MOTOR) == 0
+				doorOpen = driver.GetDoorStatus()
+				idle := driver.GetIdle()
+				Println("watchElevator() UPDATING STATUS DUE TO DOOR (",doorOpen,") OR MOTORDIR (",lastDir,")" )
 				status = ElevatorStatus{lastDir, i, !timeout, idle, doorOpen}
+				statusReport <- status
 			}
 		}
 	}
@@ -189,3 +195,4 @@ func MonitorOrderbuttons(buttons chan int) {
 		}
 	}
 }
+

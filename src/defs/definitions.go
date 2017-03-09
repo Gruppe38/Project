@@ -52,8 +52,43 @@ type ButtonMessage struct {
 	MessageID      int64 //set by network module
 }
 
+type OrderQueueNet struct {
+	Elevator [3]map[string]bool
+}
+
+type OrderMessageNet struct {
+	Message        OrderQueueNet
+	ElevatorID     int
+	TargetElevator int
+	MessageID      int64 //set by network module
+}
+
+func NewOrderQueueNet() *OrderQueueNet {
+	var orderQueueNet OrderQueueNet
+	for i,_ := range(orderQueueNet.Elevator) {
+		orderQueueNet.Elevator[i] = make(map[string]bool)
+	}
+	return &orderQueueNet
+}
+
+func NewOrderMessageNet() *OrderMessageNet {
+	var orderMessageNet OrderMessageNet
+	for i,_ := range(orderMessageNet.Message.Elevator) {
+		orderMessageNet.Message.Elevator[i] = make(map[string]bool)
+	}
+	return &orderMessageNet
+}
+
 type OrderQueue struct {
 	Elevator [3]map[int]bool
+}
+
+func NewOrderQueue() *OrderQueue {
+	var orderQueue OrderQueue
+	for i,_ := range(orderQueue.Elevator) {
+		orderQueue.Elevator[i] = make(map[int]bool)
+	}
+	return &orderQueue
 }
 
 type OrderMessage struct {
@@ -61,6 +96,14 @@ type OrderMessage struct {
 	ElevatorID     int
 	TargetElevator int
 	MessageID      int64 //set by network module
+}
+
+func NewOrderMessage() *OrderMessage {
+	var orderMessage OrderMessage
+	for i,_ := range(orderMessage.Message.Elevator) {
+		orderMessage.Message.Elevator[i] = make(map[int]bool)
+	}
+	return &orderMessage
 }
 
 const (
