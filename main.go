@@ -68,7 +68,7 @@ func main() {
 
 		go Destination(statusReportsSend2, orderMessageSend1, movementInstructions)
 		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
-		go BroadcastOrderMEessage(orderMessage, orderMessageSend1, orderMessageSend2)
+		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2)
 		go WatchCompletedOrders(statusReportsSend3, buttonCompletedSend)
 		go WatchIncommingOrders(buttonReports, confirmedQueue, buttonNewSend)
 		go CreateCurrentQueue(orderMessageSend2, confirmedQueue)

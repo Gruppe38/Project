@@ -39,7 +39,6 @@ func CreateOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 			} else {
 				cheapestCost := 9999
 				cheapestElevator := -1
-				println("here")
 				for i, v := range activeElevators {
 					println("elevator #",i, "active =", v)
 					if v {
@@ -49,6 +48,7 @@ func CreateOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 					}
 				}
 				if cheapestElevator == -1 {
+					println("No active elevators, did not assign to any elevator")
 					break
 				}
 				orders.Elevator[cheapestElevator][order.Message] = true
