@@ -1,3 +1,12 @@
+Ting som må gjøres før frist:
+- Fikse/finne ut av deadlock
+- Ny kostfunksjon
+
+
+
+
+
+
 ..# Project.
 
 set GOPATH=C:\Users\Arild\Desktop\Lab\Project
