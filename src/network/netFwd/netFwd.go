@@ -38,21 +38,21 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 			statMes := StatusMessage{stat, me, master, messageID}
 			//unconfirmedStatus[messageID] = statMes
 			statusMes <- statMes
-			println("SendToNetwork() sent status dir:", stat.Dir," lastFloor: ", stat.LastFloor, " activeMotor:" ,stat.ActiveMotor, " atFloor", stat.AtFloor, "doorOpen", stat.DoorOpen)
+			//println("SendToNetwork() sent status dir:", stat.Dir," lastFloor: ", stat.LastFloor, " activeMotor:" ,stat.ActiveMotor, " atFloor", stat.AtFloor, "doorOpen", stat.DoorOpen)
 		case button := <-buttonNew:
 			//println("SendToNetwork() got new button", button)
 			messageID := rand.Int63()
 			butMes := ButtonMessage{button, true, me, master, messageID}
 			//unconfirmedButton[messageID] = butMes
 			buttonMes <- butMes
-			println("SendToNetwork() sent new button", button)
+			//println("SendToNetwork() sent new button", button)
 		case button := <-buttonCompleted:
 			//println("SendToNetwork() got completed button", button)
 			messageID := rand.Int63()
 			butMes := ButtonMessage{button, false, me, master, messageID}
 			//unconfirmedButton[messageID] = butMes
 			buttonMes <- butMes
-			println("SendToNetwork() sent completed button", button)
+			//println("SendToNetwork() sent completed button", button)
 		case order := <-orders:
 			//println("SendToNetwork() got order")
 			orderNet := *NewOrderQueueNet()
@@ -65,7 +65,7 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 			ordMes := OrderMessageNet{orderNet, me, master, messageID}
 			//unconfirmedOrders[messageID] = ordMes
 			ordersMes <- ordMes
-			println("SendToNetwork() sent order with messageID:", ordMes.MessageID)
+			//println("SendToNetwork() sent order with messageID:", ordMes.MessageID)
 		case ack := <-ackRx:
 			//println("SendToNetwork() recieved ack:", ack.Message, " with type ", ack.Type, " ack for me = ", ack.TargetElevator == me)
 			if ack.TargetElevator == me {
@@ -80,10 +80,10 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 				break
 			}
 		case me = <-myID:
-			println("SendToNetwork() got new me:", me)
+			//println("SendToNetwork() got new me:", me)
 			continue
 		case master = <-masterID:
-			println("SendToNetwork() got new master:", master)
+			//println("SendToNetwork() got new master:", master)
 			continue
 		}
 	}
@@ -133,7 +133,7 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 				if !sentAck[stat.MessageID] {
 					sentAck[stat.MessageID] = true
 					status <- stat
-					println("RecieveFromNetwork() sent status with ID ", stat.MessageID)
+					//println("RecieveFromNetwork() sent status with ID ", stat.MessageID)
 				} else {
 					//println("RecieveFromNetwork() Already sent ack for status with ID ", stat.MessageID)
 				}
@@ -147,10 +147,10 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 					sentAck[button.MessageID] = true
 					if button.MessageType {
 						buttonNew <- button
-						println("RecieveFromNetwork() forwarded new button", button.Message)
+						//println("RecieveFromNetwork() forwarded new button", button.Message)
 					} else {
 						buttonCompleted <- button
-						println("RecieveFromNetwork() forwarded completed button", button.Message)
+						//println("RecieveFromNetwork() forwarded completed button", button.Message)
 					}
 				} else {
 					//println("Already sent ack for button with ID", button.MessageID)
@@ -171,7 +171,7 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 					ordersNet := OrderMessage{orderNet,order.ElevatorID,order.TargetElevator,order.MessageID}
 					sentAck[order.MessageID] = true
 					orders <- ordersNet
-					println("RecieveFromNetwork() forwarded order with ID ", order.MessageID)
+					//println("RecieveFromNetwork() forwarded order with ID ", order.MessageID)
 				}	else{
 				//println("RecieveFromNetwork() Already sent ack for order with ID", order.MessageID)
 			}
