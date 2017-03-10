@@ -29,7 +29,6 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 
 	go bcast.Transmitter(13038, statusMes, buttonMes, ordersMes)
 	go bcast.Receiver(14038, ackRx)
-	println("SendToNetwork startet")
 	for {
 		select {
 		case stat := <-status:
@@ -93,7 +92,6 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 
 //myID, får id til heisen, må fåes rett etter oppstart, fra main
 func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan ButtonMessage, buttonCompleted chan ButtonMessage, orders chan OrderMessage) {
-	println("RecieveFromNetwork startet")
 	sentAck := make(map[int64]bool)
 
 	statusMes := make(chan StatusMessage)
@@ -104,22 +102,7 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 	go bcast.Receiver(13038, statusMes, buttonMes, ordersMes)
 	go bcast.Transmitter(14038, ackTx)
 
-	me := -1
-	time.Sleep(45*time.Millisecond)
-	ready := false
-	for !ready {
-		select {
-		case me = <-myID:
-			ready = true
-		case <- statusMes:
-			continue
-		case <- buttonMes:
-			continue
-		case <- ordersMes:
-			continue
-		}
-	}
-	println("RecieveFromNetwork() wait time for reciever passed")
+	me := <-myID
 	//todo
 	//sjekk om melding er til meg
 	//Send bekreftelse
