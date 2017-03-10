@@ -235,8 +235,8 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 					return ElevatorMovement{status.Dir, status.Dir, i}
 				}
 			}
-			for i := N_FLOOR - 1; i > status.LastFloor; i-- {
-				if orderButtonMatrix[i][1] {
+			for i := N_FLOOR - 1; i >= status.LastFloor; i-- {
+				if orderButtonMatrix[i][0] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
 			}
@@ -246,8 +246,8 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 					return ElevatorMovement{status.Dir, status.Dir, i}
 				}
 			}
-			for i := N_FLOOR - 1; i > status.LastFloor; i-- {
-				if orderButtonMatrix[i][1] {
+			for i := N_FLOOR - 1; i >= status.LastFloor; i-- {
+				if orderButtonMatrix[i][0] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
 			}
