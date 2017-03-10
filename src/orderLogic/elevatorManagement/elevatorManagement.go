@@ -221,7 +221,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 					return ElevatorMovement{status.Dir, status.Dir, i}
 				}
 			}
-			for i := 4; i < status.LastFloor; i++ {
+			for i := N_FLOOR-1; i < status.LastFloor; i++ {
 				if orderButtonMatrix[i][0] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
@@ -304,9 +304,9 @@ func WatchCompletedOrders(statusReport chan ElevatorStatus, buttonReports chan i
 		if t {
 			if status.DoorOpen {
 				Println("WatchCompletedOrders() clearing orders at floor", status.LastFloor)
-				if status.LastFloor == 4 {
+				if status.LastFloor == N_FLOOR-1 {
 					buttonReports <- OrderButtonMatrix[3][1]
-				} else if status.LastFloor == 1 {
+				} else if status.LastFloor == 0 {
 					buttonReports <- OrderButtonMatrix[0][0]
 				} else if status.Dir {
 					buttonReports <- OrderButtonMatrix[status.LastFloor][0]
@@ -335,7 +335,7 @@ func WatchIncommingOrders(buttonReports chan int, confirmedQueue chan map[int]bo
 				forwardOrders <- button
 				Println("Sent button: ", button)
 			}
-		case <-confirmedQueue:
+		case currentQueue = <-confirmedQueue:
 			continue
 			/*			for i := 0; i < N_FLOOR; i++ {
 						for j := 0; j < 3; j++{
