@@ -24,7 +24,7 @@ func CreateOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 	for {
 		select {
 		case status := <-statusReport:
-			Println("recieved statusReport in createOrderQueue(): ", status.ElevatorID)
+			Println("recieved statusReport in createOrderQueue(): from elevator", status.ElevatorID)
 			elevatorStatus[status.ElevatorID-1] = status.Message
 			activeElevators[status.ElevatorID-1] = true
 		case order := <-completedOrders:
@@ -151,14 +151,13 @@ func Destination(statusReport chan ElevatorStatus, orders chan OrderMessage, mov
 		case order := <-orders:
 			Println("Recieved orders in Destination")
 			for k,v := range(order.Message.Elevator[0]) {
-				Println("Knapp: ",k," Verdi: ",v, "\n")
+				Println("Knapp: ",k," Verdi: ",v)
 			}
 			myOrders = order.Message.Elevator[order.TargetElevator-1]
 			instructions := calculateDestination(status, myOrders)
 			Println("Destination() reciveded instructions", instructions)
 			if instructions.TargetFloor != -1 {
 				movementInstructions <- instructions
-				Println("Instructions sent on channel movementInstructions, only if instructions != -1")
 			}
 		}
 	}
@@ -169,7 +168,7 @@ func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMo
 	orderButtonMatrix := [N_FLOOR][3]bool{}
 	for key, value := range orders {
 		if value {
-			print("Knapp: ", key, "er aktiv \n")
+			Println("Knapp: ", key, " er aktiv")
 			empty = false
 			i, j := getButtonIndex(key)
 			orderButtonMatrix[i][j] = true
@@ -231,7 +230,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 				}
 			}
 			for i := N_FLOOR - 1; i >= status.LastFloor; i-- {
-				if orderButtonMatrix[i][0] {
+				if orderButtonMatrix[i][1] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
 			}
@@ -243,7 +242,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 				}
 			}
 			for i := N_FLOOR - 1; i >= status.LastFloor; i-- {
-				if orderButtonMatrix[i][0] {
+				if orderButtonMatrix[i][1] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
 			}
@@ -305,9 +304,9 @@ func WatchCompletedOrders(statusReport chan ElevatorStatus, buttonReports chan i
 				} else if status.LastFloor == 0 {
 					buttonReports <- OrderButtonMatrix[0][0]
 				} else if status.Dir {
-					buttonReports <- OrderButtonMatrix[status.LastFloor][0]
-				} else {
 					buttonReports <- OrderButtonMatrix[status.LastFloor][1]
+				} else {
+					buttonReports <- OrderButtonMatrix[status.LastFloor][0]
 				}
 			}
 		} else {
@@ -384,11 +383,19 @@ func CreateCurrentQueue(orderQueueReports chan OrderMessage, confirmedQueue chan
 
 //Help functions
 func toggleLights(confirmedQueue map[int]bool) {
-	for button, value := range confirmedQueue {
+	/*for button, value := range confirmedQueue {
 		if value {
 			driver.SetBit(button)
 		} else {
 			driver.ClearBit(button)
+		}
+	}*/
+	for button, value := range confirmedQueue {
+		i,j := getButtonIndex(button)
+		if value {
+			driver.SetLamp(j,i,1)
+		} else {
+			driver.SetLamp(j,i,0)
 		}
 	}
 }

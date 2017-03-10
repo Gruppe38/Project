@@ -111,7 +111,7 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 		case <-watchDog.C:
 			Println("Elevator has used more than five seconds between two floors")
 			timeout = true
-			lastDir = driver.GetMotor()==1
+			lastDir = driver.GetMotor()!=1
 			doorOpen = driver.GetDoorStatus()
 			status = ElevatorStatus{lastDir, last, !timeout, false, doorOpen}
 			statusReport <- status
@@ -124,7 +124,7 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 			default:
 				currentFloorChan <- i
 				Println("Current floor is sent to localElevator()")
-				lastDir = driver.GetMotor()==1
+				lastDir = driver.GetMotor()!=1
 				doorOpen = driver.GetDoorStatus()
 				idle := driver.GetIdle()
 				if i == -1 {
@@ -141,9 +141,9 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 				statusReport <- status
 				Println("Elevator status is sent. Elevator status: ", status)
 			}
-			if (lastDir != (driver.GetMotor()==1)) || (doorOpen != driver.GetDoorStatus()) {
+			if (lastDir != (driver.GetMotor()!=1)) || (doorOpen != driver.GetDoorStatus()) {
 				Println("Checking if direction or doors have changed since last floor update and updating status")
-				lastDir = driver.GetMotor()==1
+				lastDir = driver.GetMotor()!=1
 				doorOpen = driver.GetDoorStatus()
 				idle := driver.GetIdle()
 				Println("watchElevator() UPDATING STATUS DUE TO DOOR (",doorOpen,") OR MOTORDIR (",lastDir,")" )
