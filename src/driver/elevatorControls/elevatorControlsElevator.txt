@@ -122,16 +122,16 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 
 func checkSensors() int {
 	if driver.ReadBit(SENSOR1) {
-		return 0
-	}
-	if driver.ReadBit(SENSOR2) {
 		return 1
 	}
-	if driver.ReadBit(SENSOR3) {
+	if driver.ReadBit(SENSOR2) {
 		return 2
 	}
-	if driver.ReadBit(SENSOR4) {
+	if driver.ReadBit(SENSOR3) {
 		return 3
+	}
+	if driver.ReadBit(SENSOR4) {
+		return 4
 	}
 	return -1
 }

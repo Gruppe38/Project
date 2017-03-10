@@ -198,10 +198,9 @@ func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMo
 }
 
 func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) ElevatorMovement {
-	Println("Running function findNextOrder()")
-	Println("status.Dir: ", status.Dir)
-	Println("status.AtFloor: ", status.AtFloor)
-	Println("status.AtFloor: ", status.LastFloor)
+	//Println("Running function findNextOrder()")
+	//Println("status.Dir: ", status.Dir)
+	//Println("status.AtFloor: ", status.AtFloor)
 	switch status.Dir {
 	case true:
 		//Println("This case runs if status.Dir is true")
@@ -237,7 +236,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 				}
 			}
 			for i := N_FLOOR - 1; i >= status.LastFloor; i-- {
-				if orderButtonMatrix[i][1] {
+				if orderButtonMatrix[i][0] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
 			}
@@ -248,7 +247,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 				}
 			}
 			for i := N_FLOOR - 1; i >= status.LastFloor; i-- {
-				if orderButtonMatrix[i][1] {
+				if orderButtonMatrix[i][0] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
 			}
@@ -326,24 +325,17 @@ func WatchCompletedOrders(statusReport chan ElevatorStatus, buttonReports chan i
 //forwardOrders sender via nettverket, til createOrderQueue
 func WatchIncommingOrders(buttonReports chan int, confirmedQueue chan map[int]bool, forwardOrders chan int) {
 	currentQueue := make(map[int]bool)
-	knownOrders := make(map[int]bool)
 	for {
 		select {
 		case button := <-buttonReports:
-			if !currentQueue[button] && !knownOrders[button] {
+			//Println("Got button: ", button)
+			if !currentQueue[button] {
 				currentQueue[button] = true
 				//nonConfirmedQueue[button] = true
 				forwardOrders <- button
-				Println("WatchIncommingOrders() sent button: ", button)
-			} else {
-				Println("WatchIncommingOrders() did not send button: ", button)
+				Println("Sent button: ", button)
 			}
-		case knownOrders = <-confirmedQueue:
-			for k,v:= range(knownOrders){
-				if v {
-					currentQueue[k] = false
-				}
-			}
+		case currentQueue = <-confirmedQueue:
 			continue
 			/*			for i := 0; i < N_FLOOR; i++ {
 						for j := 0; j < 3; j++{
@@ -364,20 +356,15 @@ func CreateCurrentQueue(orderQueueReports chan OrderMessage, confirmedQueue chan
 	for {
 		select {
 		case orderQueue := <-orderQueueReports:
-
-			for i := 0; i < N_FLOOR; i++ {
-				for j := 0; j < 2; j++ {
-					button := OrderButtonMatrix[i][j]
-					currentQueue[button] = false
-					for k := 0; k < 3; k++ {
-						button := OrderButtonMatrix[i][j]
-						if orderQueue.Message.Elevator[k][button] {
-							currentQueue[button] = true
-						}
-						if k == orderQueue.TargetElevator {
-							button := OrderButtonMatrix[i][2]
-							currentQueue[button] = orderQueue.Message.Elevator[k-1][button]
-						}
+			for i := 0; i < 3; i++ {
+				for j := 0; j < N_FLOOR; j++ {
+					for k := 0; k < 2; k++ {
+						button := OrderButtonMatrix[j][k]
+						currentQueue[button] = orderQueue.Message.Elevator[i][button]
+					}
+					if i == orderQueue.TargetElevator {
+						button := OrderButtonMatrix[j][2]
+						currentQueue[button] = orderQueue.Message.Elevator[i][button]
 					}
 				}
 			}
