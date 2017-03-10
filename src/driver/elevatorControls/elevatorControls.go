@@ -122,7 +122,7 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 			default: //Skjer hver gang vi har endret etasje
 				currentFloorChan <- i
 				Println("Current floor is sent to localElevator()")
-				direction = driver.GetMotor()!=1
+				direction = driver.GetMotor()==1
 				doorOpen = driver.GetDoorStatus()
 				idle := driver.GetIdle()
 				if i == -1 {
@@ -139,9 +139,9 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 				statusReport <- status
 				Println("Elevator status is sent. Elevator status: ", status)
 			}
-			if (direction != (driver.GetMotor()!=1)) || (doorOpen != driver.GetDoorStatus()) {
+			if (direction != (driver.GetMotor()==1)) || (doorOpen != driver.GetDoorStatus()) {
 				Println("Checking if direction or doors have changed since last floor update and updating status")
-				direction = driver.GetMotor()!=1
+				direction = driver.GetMotor()==1
 				doorOpen = driver.GetDoorStatus()
 				idle := driver.GetIdle()
 				status = ElevatorStatus{direction, i, timeout, idle, doorOpen}

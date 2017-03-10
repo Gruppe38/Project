@@ -198,9 +198,10 @@ func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMo
 }
 
 func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) ElevatorMovement {
-	//Println("Running function findNextOrder()")
-	//Println("status.Dir: ", status.Dir)
-	//Println("status.AtFloor: ", status.AtFloor)
+	Println("Running function findNextOrder()")
+	Println("status.Dir: ", status.Dir)
+	Println("status.AtFloor: ", status.AtFloor)
+	Println("status.AtFloor: ", status.LastFloor)
 	switch status.Dir {
 	case true:
 		//Println("This case runs if status.Dir is true")
@@ -236,7 +237,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 				}
 			}
 			for i := N_FLOOR - 1; i >= status.LastFloor; i-- {
-				if orderButtonMatrix[i][0] {
+				if orderButtonMatrix[i][1] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
 			}
@@ -247,7 +248,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 				}
 			}
 			for i := N_FLOOR - 1; i >= status.LastFloor; i-- {
-				if orderButtonMatrix[i][0] {
+				if orderButtonMatrix[i][1] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
 			}
