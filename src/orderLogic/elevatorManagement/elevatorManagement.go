@@ -383,21 +383,21 @@ func CreateCurrentQueue(orderQueueReports chan OrderMessage, confirmedQueue chan
 
 //Help functions
 func toggleLights(confirmedQueue map[int]bool) {
-	/*for button, value := range confirmedQueue {
+	for button, value := range confirmedQueue {
 		if value {
 			driver.SetBit(button)
 		} else {
 			driver.ClearBit(button)
 		}
-	}*/
-	for button, value := range confirmedQueue {
+	}
+	/*for button, value := range confirmedQueue {
 		i,j := getButtonIndex(button)
 		if value {
 			driver.SetLamp(j,i,1)
 		} else {
 			driver.SetLamp(j,i,0)
 		}
-	}
+	}*/
 }
 
 func getButtonIndex(button int) (int, int) {

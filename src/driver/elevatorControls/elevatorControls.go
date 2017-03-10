@@ -30,9 +30,9 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 			targetFloor = instruction.TargetFloor
 			nextDir = instruction.NextDir
 			if instruction.Dir {
-				driver.SetDirection(-1)
+				driver.SetBit(MOTORDIR)
 			} else {
-				driver.SetDirection(1)
+				driver.ClearBit(MOTORDIR)
 			}
 
 			//Hvis vi faktisk er i riktig etasje, må vi åpne dører og cleare ordre
@@ -42,21 +42,21 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 			//dvs vi må force en status endring?
 			if targetFloor == checkSensors() {
 				Println("LocalElevator() door opened")
-				driver.SetMotor(false)
+				driver.WriteAnalog(MOTOR, 0)
 				if !doorTimer.Stop() && doorOpen {
 					<-doorTimer.C
 				}
 				doorTimer.Reset(3 * time.Second)
 				doorOpen = true
-				driver.SetDoor(1)
+				driver.SetBit(DOOR_OPEN)
 				Println("We have reached targetFloor, doors have opened")
 				if nextDir {
-					driver.SetDirection(-1)
+					driver.SetBit(MOTORDIR)
 				} else {
-					driver.SetDirection(1)
+					driver.ClearBit(MOTORDIR)
 				}
 			} else if !doorOpen {
-				driver.SetMotor(true)
+				driver.WriteAnalog(MOTOR, 2800)
 				waitingForDoor = false
 				Println("We have not reached targetFloor, and we are not waiting for doors to close")
 			} else {
@@ -68,27 +68,27 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 			Println("LocalElevator() got a floor update: ", floor)
 			if targetFloor == floor {
 				Println("LocalElevator() door opened")
-				driver.SetMotor(false)
+				driver.WriteAnalog(MOTOR, 0)
 				if !doorTimer.Stop() && doorOpen {
 					<-doorTimer.C
 				}
 				doorTimer.Reset(3 * time.Second)
 				doorOpen = true
-				driver.SetDoor(1)
+				driver.SetBit(DOOR_OPEN)
 				Println("We have reached targetFloor, doors have opened")
 				if nextDir {
-					driver.SetDirection(-1)
+					driver.SetBit(MOTORDIR)
 				} else {
-					driver.SetDirection(1)
+					driver.ClearBit(MOTORDIR)
 				}
 			}
 		case <-doorTimer.C:
 			doorOpen = false
-			driver.SetDoor(0)
+			driver.ClearBit(DOOR_OPEN)
 			Println("Doors have closed")
 			if waitingForDoor {
 				Println("LocalElevator() starting motor when we are done waiting for doors to close")
-				driver.SetMotor(true) 
+				driver.WriteAnalog(MOTOR, 2800)
 				waitingForDoor = false
 			}
 		}
@@ -111,8 +111,8 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 		case <-watchDog.C:
 			Println("Elevator has used more than five seconds between two floors")
 			timeout = true
-			lastDir = driver.GetMotor()!=1
-			doorOpen = driver.GetDoorStatus()
+			lastDir = driver.ReadBit(MOTORDIR)
+			doorOpen = driver.ReadBit(DOOR_OPEN)
 			status = ElevatorStatus{lastDir, last, !timeout, false, doorOpen}
 			statusReport <- status
 			Println("Status update sent, this eleavtor is not seen as active until this status \n is updated (when it has reached a new floor)")
@@ -124,9 +124,9 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 			default:
 				currentFloorChan <- i
 				Println("Current floor is sent to localElevator()")
-				lastDir = driver.GetMotor()!=1
-				doorOpen = driver.GetDoorStatus()
-				idle := driver.GetIdle()
+				lastDir = driver.ReadBit(MOTORDIR)
+				doorOpen = driver.ReadBit(DOOR_OPEN)
+				idle := driver.ReadAnalog(MOTOR) == 0
 				if i == -1 {
 					watchDog.Reset(5 * time.Second)
 					status = ElevatorStatus{lastDir, last, !timeout, idle, doorOpen}
@@ -141,11 +141,11 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 				statusReport <- status
 				Println("Elevator status is sent. Elevator status: ", status)
 			}
-			if (lastDir != (driver.GetMotor()!=1)) || (doorOpen != driver.GetDoorStatus()) {
+			if (lastDir != driver.ReadBit(MOTORDIR)) || (doorOpen != driver.ReadBit(DOOR_OPEN)) {
 				Println("Checking if direction or doors have changed since last floor update and updating status")
-				lastDir = driver.GetMotor()!=1
-				doorOpen = driver.GetDoorStatus()
-				idle := driver.GetIdle()
+				lastDir = driver.ReadBit(MOTORDIR)
+				doorOpen = driver.ReadBit(DOOR_OPEN)
+				idle := driver.ReadAnalog(MOTOR) == 0
 				Println("watchElevator() UPDATING STATUS DUE TO DOOR (",doorOpen,") OR MOTORDIR (",lastDir,")" )
 				status = ElevatorStatus{lastDir, i, !timeout, idle, doorOpen}
 				statusReport <- status
@@ -155,48 +155,21 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 }
 
 func checkSensors() int {
-	/*if driver.ReadBit(SENSOR1) {
-		return 1
+	if driver.ReadBit(SENSOR1) {
+		return 0
 	}
 	if driver.ReadBit(SENSOR2) {
-		return 2
+		return 1
 	}
 	if driver.ReadBit(SENSOR3) {
-		return 3
+		return 2
 	}
 	if driver.ReadBit(SENSOR4) {
-		return 4
+		return 3
 	}
-	return -1*/
-	return driver.GetFloorSignal()
+	return -1
+	//return driver.GetFloorSignal()
 }
-
-//Som timer 2, men isteded tar inn bool, og returnerer om status er samme som bool, på samme kanal
-//Fordel: Mer "logisk" bruk av channel, brukes som mer enn bare trigger til et event
-/*
-func timer3(start chan bool, ask chan bool, shutdownChan chan bool){
-	doorTimer := time.NewTimer(3*time.Second)
-	doorTimer.Stop()
-	currentlyRunning := false
-	for{
-		select{
-		case  <- start:
-			//Avoid race condition
-			if !doorTimer.Stop() && currentlyRunning{
-				<- doorTimer.C
-			}
-			doorTimer.Reset(3*time.Second)
-			currentlyRunning = true
-		case question := <- ask:
-			ask <- question == currentlyRunning
-		case  <- doorTimer.C :
-			currentlyRunning = false
-		case  <- shutdownChan:
-			break
-		}
-	}
-}
-*/
 
 //buttons sender til watchIncommingOrders
 func MonitorOrderbuttons(buttons chan int) {
@@ -207,7 +180,7 @@ func MonitorOrderbuttons(buttons chan int) {
 			for j := 0; j < 3; j++ {
 				if !(i == 0 && j == 1) && !(i == N_FLOOR-1 && j == 0) {
 					currentButton := OrderButtonMatrix[i][j]
-					if driver.GetButtonSignal(j,i) {
+					if driver.ReadBit(currentButton) {
 						noButtonsPressed = false
 						if currentButton != last {
 							Println("New button: ", currentButton)

@@ -15,9 +15,9 @@ import (
 func main() {
 	var state = Init
 
-	//sucess := IoInit()
-	SimInit()
-	sucess := true
+	sucess := IoInit()
+	//SimInit()
+	//sucess := true
 
 	if sucess {
 		peerUpdateCh := make(chan PeerUpdate)

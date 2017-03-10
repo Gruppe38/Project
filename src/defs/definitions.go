@@ -113,6 +113,10 @@ const (
 	NoNetwork    int = 3
 	DeadElevator int = 4
 )
+const EVERYONE = 0
+
+
+//Definitions for Elevator IO
 
 //in port 4
 const PORT4 = 3

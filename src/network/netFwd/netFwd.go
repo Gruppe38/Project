@@ -61,7 +61,7 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 				}
 			}
 			messageID := rand.Int63()
-			ordMes := OrderMessageNet{orderNet, me, master, messageID}
+			ordMes := OrderMessageNet{orderNet, me, EVERYONE, messageID}
 			//unconfirmedOrders[messageID] = ordMes
 			ordersMes <- ordMes
 			//println("SendToNetwork() sent order with messageID:", ordMes.MessageID)
@@ -111,7 +111,8 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 		select {
 		case stat := <-statusMes:
 			//println("RecieveFromNetwork() got status dir:", stat.Message.Dir, " lastFloor:", stat.Message.LastFloor, " activeMotor:", stat.Message.ActiveMotor, " atFloor", stat.Message.AtFloor, "doorOpen", stat.Message.DoorOpen, " stat for me = ", stat.TargetElevator == me, " from elevator ", stat.ElevatorID, " with ID ", stat.MessageID)
-			if stat.TargetElevator == me {
+			if stat.TargetElevator == me || stat.TargetElevator ==EVERYONE{
+				stat.TargetElevator = me
 				ackTx <- AckMessage{stat.MessageID, 0, me, stat.ElevatorID}
 				if !sentAck[stat.MessageID] {
 					sentAck[stat.MessageID] = true
@@ -123,7 +124,8 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 			}
 		case button := <-buttonMes:
 			//println("RecieveFromNetwork() got button:", button.Message, " button for me = ", button.TargetElevator == me, " from elevator ", button.ElevatorID, " with ID ", button.MessageID)
-			if button.TargetElevator == me {
+			if button.TargetElevator == me || button.TargetElevator ==EVERYONE{
+				button.TargetElevator = me
 				ackTx <- AckMessage{button.MessageID, 1, me, button.ElevatorID}
 				//println("RecieveFromNetwork() sent ack for ", button.MessageID)
 				if !sentAck[button.MessageID] {
@@ -141,7 +143,8 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 			}
 		case order := <-ordersMes:
 			//println("RecieveFromNetwork() got order for me = ", order.TargetElevator, me, " from elevator ", order.ElevatorID, " with ID ", order.MessageID)
-			if order.TargetElevator == me {
+			if order.TargetElevator == me || order.TargetElevator ==EVERYONE{
+				order.TargetElevator = me
 				ackTx <- AckMessage{order.MessageID, 2, me, order.ElevatorID}
 				if !sentAck[order.MessageID] {
 					orderNet := *NewOrderQueue()
