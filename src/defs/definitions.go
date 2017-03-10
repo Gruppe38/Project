@@ -65,7 +65,7 @@ type OrderMessageNet struct {
 
 func NewOrderQueueNet() *OrderQueueNet {
 	var orderQueueNet OrderQueueNet
-	for i,_ := range(orderQueueNet.Elevator) {
+	for i, _ := range orderQueueNet.Elevator {
 		orderQueueNet.Elevator[i] = make(map[string]bool)
 	}
 	return &orderQueueNet
@@ -73,7 +73,7 @@ func NewOrderQueueNet() *OrderQueueNet {
 
 func NewOrderMessageNet() *OrderMessageNet {
 	var orderMessageNet OrderMessageNet
-	for i,_ := range(orderMessageNet.Message.Elevator) {
+	for i, _ := range orderMessageNet.Message.Elevator {
 		orderMessageNet.Message.Elevator[i] = make(map[string]bool)
 	}
 	return &orderMessageNet
@@ -85,7 +85,7 @@ type OrderQueue struct {
 
 func NewOrderQueue() *OrderQueue {
 	var orderQueue OrderQueue
-	for i,_ := range(orderQueue.Elevator) {
+	for i, _ := range orderQueue.Elevator {
 		orderQueue.Elevator[i] = make(map[int]bool)
 	}
 	return &orderQueue
@@ -100,7 +100,7 @@ type OrderMessage struct {
 
 func NewOrderMessage() *OrderMessage {
 	var orderMessage OrderMessage
-	for i,_ := range(orderMessage.Message.Elevator) {
+	for i, _ := range orderMessage.Message.Elevator {
 		orderMessage.Message.Elevator[i] = make(map[int]bool)
 	}
 	return &orderMessage
@@ -114,7 +114,6 @@ const (
 	DeadElevator int = 4
 )
 const EVERYONE = 0
-
 
 //Definitions for Elevator IO
 
@@ -186,4 +185,30 @@ var OrderButtonMatrix = [N_FLOOR][3]int{
 	{BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
 	{BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
 	{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
+}
+
+func BtoS(button int) string {
+	switch button {
+	case BUTTON_UP1:
+		return "UP1"
+	case BUTTON_UP2:
+		return "UP2"
+	case BUTTON_UP3:
+		return "UP3"
+	case BUTTON_DOWN2:
+		return "DOWN2"
+	case BUTTON_DOWN3:
+		return "DOWN3"
+	case BUTTON_DOWN4:
+		return "DOWN5"
+	case BUTTON_COMMAND1:
+		return "CDM1"
+	case BUTTON_COMMAND2:
+		return "CDM2"
+	case BUTTON_COMMAND3:
+		return "CDM3"
+	case BUTTON_COMMAND4:
+		return "CDM4"
+	}
+	return "Not a button"
 }

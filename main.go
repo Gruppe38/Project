@@ -41,7 +41,7 @@ func main() {
 		statusReports := make(chan ElevatorStatus)
 		statusReportsSend1 := make(chan ElevatorStatus)
 		statusReportsSend2 := make(chan ElevatorStatus)
-		statusReportsSend3 := make(chan ElevatorStatus)
+		movementReport := make(chan ElevatorMovement)
 
 		buttonReports := make(chan int)
 		myIDSend := make(chan int)
@@ -59,7 +59,7 @@ func main() {
 		orderMessageSend2 := make(chan OrderMessage)
 		confirmedQueue := make(chan map[int]bool)
 
-		go LocalElevator(movementInstructions, statusReports)
+		go LocalElevator(movementInstructions, statusReports, movementReport)
 		go MonitorOrderbuttons(buttonReports)
 		go CreateOrderQueue(statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport)
 
@@ -67,13 +67,13 @@ func main() {
 		go RecieveFromNetwork(myIDRecieve, statusMessage, buttonNewRecieve, buttonCompletedRecieve, orderMessage)
 
 		go Destination(statusReportsSend2, orderMessageSend1, movementInstructions)
-		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
+		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2)
 		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2)
-		go WatchCompletedOrders(statusReportsSend3, buttonCompletedSend)
+		go WatchCompletedOrders(movementReport, buttonCompletedSend)
 		go WatchIncommingOrders(buttonReports, confirmedQueue, buttonNewSend)
 		go CreateCurrentQueue(orderMessageSend2, confirmedQueue)
 
-		time.Sleep(500*time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 		myIDSend <- 1
 		myIDRecieve <- 1
 		masterID <- 1

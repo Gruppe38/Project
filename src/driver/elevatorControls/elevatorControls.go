@@ -10,7 +10,7 @@ import (
 // Setter motorhastighet og retning, dørlys og timer
 //movementInstructions fra Destination
 //statusReport brukes ikke av denne funkjsonen
-func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan ElevatorStatus) {
+func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan ElevatorStatus, movementReport chan ElevatorMovement) {
 
 	currentFloorChan := make(chan int)
 	go watchElevator(currentFloorChan, statusReport)
@@ -41,7 +41,8 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 			//Cleare ordre skjer bare når status endrer seg og inkluderer at dør er åpen
 			//dvs vi må force en status endring?
 			if targetFloor == checkSensors() {
-				Println("LocalElevator() door opened")
+				movementReport <- ElevatorMovement{instruction.Dir, nextDir, targetFloor}
+				//Println("LocalElevator() door opened")
 				driver.WriteAnalog(MOTOR, 0)
 				if !doorTimer.Stop() && doorOpen {
 					<-doorTimer.C
@@ -49,7 +50,7 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 				doorTimer.Reset(3 * time.Second)
 				doorOpen = true
 				driver.SetBit(DOOR_OPEN)
-				Println("We have reached targetFloor, doors have opened")
+				//Println("We have reached targetFloor, doors have opened")
 				if nextDir {
 					driver.SetBit(MOTORDIR)
 				} else {
@@ -58,16 +59,17 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 			} else if !doorOpen {
 				driver.WriteAnalog(MOTOR, 2800)
 				waitingForDoor = false
-				Println("We have not reached targetFloor, and we are not waiting for doors to close")
+				//Println("We have not reached targetFloor, and we are not waiting for doors to close")
 			} else {
-				Println("We are waiting for the doors to close before we can move to next targetFloor\n We are at floor: ", checkSensors(), ". Next targetFloor is: ", targetFloor)
+				//Println("We are waiting for the doors to close before we can move to next targetFloor\n We are at floor: ", checkSensors(), ". Next targetFloor is: ", targetFloor)
 				waitingForDoor = true
 			}
 
 		case floor := <-currentFloorChan:
-			Println("LocalElevator() got a floor update: ", floor)
+			//Println("LocalElevator() got a floor update: ", floor)
 			if targetFloor == floor {
-				Println("LocalElevator() door opened")
+				movementReport <- ElevatorMovement{nextDir, nextDir, targetFloor}
+				//Println("LocalElevator() door opened")
 				driver.WriteAnalog(MOTOR, 0)
 				if !doorTimer.Stop() && doorOpen {
 					<-doorTimer.C
@@ -75,7 +77,7 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 				doorTimer.Reset(3 * time.Second)
 				doorOpen = true
 				driver.SetBit(DOOR_OPEN)
-				Println("We have reached targetFloor, doors have opened")
+				//Println("We have reached targetFloor, doors have opened")
 				if nextDir {
 					driver.SetBit(MOTORDIR)
 				} else {
@@ -85,7 +87,7 @@ func LocalElevator(movementInstructions chan ElevatorMovement, statusReport chan
 		case <-doorTimer.C:
 			doorOpen = false
 			driver.ClearBit(DOOR_OPEN)
-			Println("Doors have closed")
+			//Println("Doors have closed")
 			if waitingForDoor {
 				Println("LocalElevator() starting motor when we are done waiting for doors to close")
 				driver.WriteAnalog(MOTOR, 2800)
@@ -122,8 +124,6 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 			case last:
 				break
 			default:
-				currentFloorChan <- i
-				Println("Current floor is sent to localElevator()")
 				lastDir = driver.ReadBit(MOTORDIR)
 				doorOpen = driver.ReadBit(DOOR_OPEN)
 				idle := driver.ReadAnalog(MOTOR) == 0
@@ -136,17 +136,20 @@ func watchElevator(currentFloorChan chan int, statusReport chan ElevatorStatus) 
 					}
 					timeout = false
 					status = ElevatorStatus{lastDir, i, !timeout, idle, doorOpen}
+					currentFloorChan <- i
+					//Println("Current floor is sent to localElevator()")
+					setFloorIndicator(i)
 				}
 				last = i
 				statusReport <- status
-				Println("Elevator status is sent. Elevator status: ", status)
+				//Println("Elevator status is sent. Elevator status: ", status)
 			}
 			if (lastDir != driver.ReadBit(MOTORDIR)) || (doorOpen != driver.ReadBit(DOOR_OPEN)) {
-				Println("Checking if direction or doors have changed since last floor update and updating status")
+				//Println("Checking if direction or doors have changed since last floor update and updating status")
 				lastDir = driver.ReadBit(MOTORDIR)
 				doorOpen = driver.ReadBit(DOOR_OPEN)
 				idle := driver.ReadAnalog(MOTOR) == 0
-				Println("watchElevator() UPDATING STATUS DUE TO DOOR (",doorOpen,") OR MOTORDIR (",lastDir,")" )
+				//Println("watchElevator() UPDATING STATUS DUE TO DOOR (", doorOpen, ") OR MOTORDIR (", lastDir, ")")
 				status = ElevatorStatus{lastDir, i, !timeout, idle, doorOpen}
 				statusReport <- status
 			}
@@ -183,7 +186,7 @@ func MonitorOrderbuttons(buttons chan int) {
 					if driver.ReadBit(currentButton) {
 						noButtonsPressed = false
 						if currentButton != last {
-							Println("New button: ", currentButton)
+							Println("New button: ", BtoS(currentButton))
 							buttons <- currentButton
 							last = currentButton
 						}
@@ -194,5 +197,19 @@ func MonitorOrderbuttons(buttons chan int) {
 		if noButtonsPressed {
 			last = -1
 		}
+	}
+}
+
+func setFloorIndicator(floor int) {
+	// Binary encoding. One light must always be on.
+	if floor > 1 {
+		driver.SetBit(FLOOR_IND1)
+	} else {
+		driver.ClearBit(FLOOR_IND1)
+	}
+	if floor == 1 || floor == 3 {
+		driver.SetBit(FLOOR_IND2)
+	} else {
+		driver.ClearBit(FLOOR_IND2)
 	}
 }

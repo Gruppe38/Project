@@ -28,28 +28,31 @@ func CreateOrderQueue(statusReport chan StatusMessage, completedOrders chan Butt
 			elevatorStatus[status.ElevatorID-1] = status.Message
 			activeElevators[status.ElevatorID-1] = true
 		case order := <-completedOrders:
-			Println("recieved completedOrders in createOrderQueue(): ", order.Message, " from elevator ", order.ElevatorID)
+			//Println("recieved completedOrders in createOrderQueue(): ", order.Message, " from elevator ", order.ElevatorID)
 			i, _ := getButtonIndex(order.Message)
 			orders.Elevator[order.ElevatorID-1][order.Message] = false
 			orders.Elevator[order.ElevatorID-1][OrderButtonMatrix[i][2]] = false
 			orderQueueReport <- orders
-			Println("Ordre har blitt clearet og oppdatert orderQueue har blitt sendt")
+			//Println("Ordre har blitt clearet og oppdatert orderQueue har blitt sendt")
 		case order := <-newOrders:
-			println("CreateOrderQueue got button(): ", order.Message)
+			println("CreateOrderQueue got button(): ", BtoS(order.Message))
 			if order.Message == BUTTON_COMMAND1 || order.Message == BUTTON_COMMAND2 ||
-						order.Message == BUTTON_COMMAND3 || order.Message == BUTTON_COMMAND4 {
-				println("newOrder is internal button")
+				order.Message == BUTTON_COMMAND3 || order.Message == BUTTON_COMMAND4 {
+				//println("newOrder is internal button")
 				orders.Elevator[order.ElevatorID-1][order.Message] = true
 				println("CreateOrderQueue assigned order to: ", order.ElevatorID)
 				orderQueueReport <- orders
 			} else {
 				cheapestCost := 9999
 				cheapestElevator := -1
-				println("newOrder is external button")
+				//println("newOrder is external button")
 				for i, v := range activeElevators {
-					println("elevator #",i+1, "active =", v)
+					println("elevator #", i+1, "active =", v)
 					if v {
-						if calculateCost(orders.Elevator[i], elevatorStatus[i], order.Message) < cheapestCost {
+						currentElevatorCost := calculateCost(orders.Elevator[i], elevatorStatus[i], order.Message)
+						Println("Cost for elevator", i+1, "is ", currentElevatorCost)
+						if currentElevatorCost < cheapestCost {
+							cheapestCost = currentElevatorCost
 							cheapestElevator = i
 						}
 					}
@@ -84,15 +87,15 @@ func calculateCost(orders map[int]bool, status ElevatorStatus, button int) int {
 	turnCost := 0
 	switch buttonType {
 	case 0:
-		Println("Calculating distanceCost for buttontype: UP/0")
+		//Println("Calculating distanceCost for buttontype: UP/0")
 		buttonIndex = getDistanceIndex(buttonFloor, false)
 		distanceCost = elevatorIndex - buttonIndex
 	case 1:
-		Println("Calculating distanceCost for buttontype: DOWN/1")		
+		//Println("Calculating distanceCost for buttontype: DOWN/1")
 		buttonIndex = getDistanceIndex(buttonFloor, true)
 		distanceCost = elevatorIndex - buttonIndex
 	case 2:
-		Println("Calculating distanceCost for buttontype: INTERNAL/2")
+		//Println("Calculating distanceCost for buttontype: INTERNAL/2")
 		if elevatorIndex-getDistanceIndex(buttonFloor, false) > elevatorIndex-getDistanceIndex(buttonFloor, true) {
 			buttonIndex = getDistanceIndex(buttonFloor, true)
 		} else {
@@ -108,7 +111,6 @@ func calculateCost(orders map[int]bool, status ElevatorStatus, button int) int {
 	if buttonIndex >= 3 && (elevatorIndex < 3 || elevatorIndex > buttonIndex) {
 		turnCost += 3
 	}
-
 	return distanceCost + turnCost
 
 }
@@ -146,16 +148,16 @@ func Destination(statusReport chan ElevatorStatus, orders chan OrderMessage, mov
 			Println("Destination() calculated new instructions: ", instructions)
 			if instructions.TargetFloor != -1 {
 				movementInstructions <- instructions
-				Println("Instructions sent on channel movementInstructions, only if instructions != -1")
+				//Println("Instructions sent on channel movementInstructions, only if instructions != -1")
 			}
 		case order := <-orders:
-			Println("Recieved orders in Destination")
-			for k,v := range(order.Message.Elevator[0]) {
-				Println("Knapp: ",k," Verdi: ",v)
+			//Println("Recieved orders in Destination")
+			for k, v := range order.Message.Elevator[0] {
+				Println("Knapp: ", BtoS(k), " Verdi: ", v)
 			}
 			myOrders = order.Message.Elevator[order.TargetElevator-1]
 			instructions := calculateDestination(status, myOrders)
-			Println("Destination() reciveded instructions", instructions)
+			//Println("Destination() reciveded instructions", instructions)
 			if instructions.TargetFloor != -1 {
 				movementInstructions <- instructions
 			}
@@ -168,7 +170,7 @@ func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMo
 	orderButtonMatrix := [N_FLOOR][3]bool{}
 	for key, value := range orders {
 		if value {
-			Println("Knapp: ", key, " er aktiv")
+			Println("Knapp: ", BtoS(key), " er aktiv")
 			empty = false
 			i, j := getButtonIndex(key)
 			orderButtonMatrix[i][j] = true
@@ -196,7 +198,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 	case true:
 		//Println("This case runs if status.Dir is true")
 		if status.AtFloor {
-			Println("Siden status.AtFloor og status.Dir er true kjøres forløkke fra i= ", status.LastFloor, "til i=0")
+			//Println("Siden status.AtFloor og status.Dir er true kjøres forløkke fra i= ", status.LastFloor, "til i=0")
 			for i := status.LastFloor; i >= 0; i-- {
 				if orderButtonMatrix[i][1] || orderButtonMatrix[i][2] {
 					return ElevatorMovement{status.Dir, status.Dir, i}
@@ -208,13 +210,13 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 				}
 			}
 		} else {
-			Println("Siden status.AtFloor er false og status.Dir er true kjøres forløkke fra i= ", status.LastFloor-1, "til i=0")
+			//Println("Siden status.AtFloor er false og status.Dir er true kjøres forløkke fra i= ", status.LastFloor-1, "til i=0")
 			for i := status.LastFloor - 1; i >= 0; i-- {
 				if orderButtonMatrix[i][1] || orderButtonMatrix[i][2] {
 					return ElevatorMovement{status.Dir, status.Dir, i}
 				}
 			}
-			for i := N_FLOOR-1; i < status.LastFloor; i++ {
+			for i := N_FLOOR - 1; i < status.LastFloor; i++ {
 				if orderButtonMatrix[i][0] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
@@ -223,7 +225,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 
 	case false:
 		if status.AtFloor {
-			Println("Siden status.AtFloor er true og status.Dir er false kjøres forløkke fra i= ", status.LastFloor, "til i<N_FLOOR")
+			//Println("Siden status.AtFloor er true og status.Dir er false kjøres forløkke fra i= ", status.LastFloor, "til i<N_FLOOR")
 			for i := status.LastFloor; i < N_FLOOR; i++ {
 				if orderButtonMatrix[i][0] || orderButtonMatrix[i][2] {
 					return ElevatorMovement{status.Dir, status.Dir, i}
@@ -235,7 +237,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 				}
 			}
 		} else {
-			Println("Siden status.AtFloor er false og status.Dir er false kjøres forløkke fra i= ", status.LastFloor+1, "til i<N_FLOOR")
+			//Println("Siden status.AtFloor er false og status.Dir er false kjøres forløkke fra i= ", status.LastFloor+1, "til i<N_FLOOR")
 			for i := status.LastFloor + 1; i < N_FLOOR; i++ {
 				if orderButtonMatrix[i][0] || orderButtonMatrix[i][2] {
 					return ElevatorMovement{status.Dir, status.Dir, i}
@@ -255,7 +257,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 //Send 1 til createOrderQueue, via nettverk
 //send2 til destination
 //send3 til watchCompletedOrders
-func BroadcastElevatorStatus(statusReport, send1, send2, send3 chan ElevatorStatus) {
+func BroadcastElevatorStatus(statusReport, send1, send2 chan ElevatorStatus) {
 	quit := false
 	for !quit {
 		select {
@@ -263,11 +265,9 @@ func BroadcastElevatorStatus(statusReport, send1, send2, send3 chan ElevatorStat
 			if t {
 				send1 <- status
 				send2 <- status
-				send3 <- status
 			} else {
 				close(send1)
 				close(send2)
-				close(send3)
 				quit = true
 			}
 		}
@@ -291,7 +291,7 @@ func BroadcastOrderMessage(orderMessage, send1, send2 chan OrderMessage) {
 	}
 }
 
-func WatchCompletedOrders(statusReport chan ElevatorStatus, buttonReports chan int) {
+/*func WatchCompletedOrders(statusReport chan ElevatorStatus, buttonReports chan int) {
 	quit := false
 	for !quit {
 		status, t := <-statusReport
@@ -313,6 +313,28 @@ func WatchCompletedOrders(statusReport chan ElevatorStatus, buttonReports chan i
 			quit = true
 		}
 	}
+}*/
+
+func WatchCompletedOrders(statusReport chan ElevatorMovement, buttonReports chan int) {
+	quit := false
+	for !quit {
+		status, t := <-statusReport
+		//Println("WatchCompletedOrders got a status update")
+		if t {
+			Println("Siden dør er åpen blir det satt i gang clearing av ordre i etasje: ", status.TargetFloor)
+			if status.TargetFloor == N_FLOOR-1 {
+				buttonReports <- OrderButtonMatrix[3][1]
+			} else if status.TargetFloor == 0 {
+				buttonReports <- OrderButtonMatrix[0][0]
+			} else if status.NextDir {
+				buttonReports <- OrderButtonMatrix[status.TargetFloor][1]
+			} else {
+				buttonReports <- OrderButtonMatrix[status.TargetFloor][0]
+			}
+		} else {
+			quit = true
+		}
+	}
 }
 
 //buttonReports fra MonitorOrderbuttons
@@ -328,12 +350,12 @@ func WatchIncommingOrders(buttonReports chan int, confirmedQueue chan map[int]bo
 				currentQueue[button] = true
 				//nonConfirmedQueue[button] = true
 				forwardOrders <- button
-				Println("WatchIncommingOrders() sent button: ", button)
+				Println("WatchIncommingOrders() sent button: ", BtoS(button))
 			} else {
-				Println("WatchIncommingOrders() did not send button: ", button)
+				Println("WatchIncommingOrders() did not send button: ", BtoS(button))
 			}
 		case knownOrders = <-confirmedQueue:
-			for k,v:= range(knownOrders){
+			for k, v := range knownOrders {
 				if v {
 					currentQueue[k] = false
 				}
@@ -384,10 +406,13 @@ func CreateCurrentQueue(orderQueueReports chan OrderMessage, confirmedQueue chan
 //Help functions
 func toggleLights(confirmedQueue map[int]bool) {
 	for button, value := range confirmedQueue {
+		i, j := getButtonIndex(button)
+		light := LightMatrix[i][j]
 		if value {
-			driver.SetBit(button)
+			//Println("Setting light for button", button)
+			driver.SetBit(light)
 		} else {
-			driver.ClearBit(button)
+			driver.ClearBit(light)
 		}
 	}
 	/*for button, value := range confirmedQueue {
