@@ -1,6 +1,8 @@
 Ting som må gjøres før frist:
 - Fikse/finne ut av deadlock
 - Ny kostfunksjon
+- myID er en kanal, men endres ikke så kan gjøres om til en variabel
+- Fikse at knappetrykk blir sendt ved skifte av master/slaves
 
 
 
@@ -22,9 +24,10 @@ Idé: endre messageID til å starte på 0 og telle oppover, delt for alle typer 
   Mulighet som da åpner seg: Bare videresende ordermessage om den har høyere id (er nyere) en sist mottate. Dermed er vi sikret at en gammel ordermessage ikke overlagrer den gamle. 
   
   
-  ip for labplass 14: 129.241.187.142
-  ip for labplass 14: 129.241.187.148
+  ip for labplass 14: 129.241.187.142 //Ikke bruk denne før den er fikset
+  ip for labplass 15: 129.241.187.148
   ip for labplass 13: 129.241.187.152
+  ip for labplass 12: 129.241.187.144
   
   freezelog:
   1: localElevator() got new movinst {false false 2}
