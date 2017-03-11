@@ -22,7 +22,7 @@ func Transmitter(port int, id string, transmitEnable <-chan bool) {
 	conn := conn.DialBroadcastUDP(port)
 	addr, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf("255.255.255.255:%d", port))
 
-	enable := true
+	enable := <-transmitEnable
 	for {
 		select {
 		case enable = <-transmitEnable:

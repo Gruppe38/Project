@@ -26,11 +26,12 @@ type StatusMessage struct {
 }
 
 type ElevatorStatus struct {
-	Dir         bool
-	LastFloor   int
-	ActiveMotor bool //kanskje endre navn
-	AtFloor     bool
-	DoorOpen    bool
+	Dir       bool
+	LastFloor int
+	Timeout   bool
+	AtFloor   bool
+	Idle      bool
+	DoorOpen  bool
 }
 
 /* ElevatorQueue struct {
@@ -79,6 +80,11 @@ func NewOrderMessageNet() *OrderMessageNet {
 	return &orderMessageNet
 }
 
+type PeerStatus struct {
+	ID     int
+	Status bool //true= ny, false = tapt
+}
+
 type OrderQueue struct {
 	Elevator [3]map[int]bool
 }
@@ -116,6 +122,16 @@ const (
 const EVERYONE = 0
 
 //Definitions for Elevator IO
+const IP1 = "129.241.187.144" //plass 12
+const IP2 = "129.241.187.148" //plass 14
+const IP3 = "129.241.187.142" //plass 15
+
+var IPToID = map[string]int{
+	"129.241.187.144": 1, //labplass 12
+	"129.241.187.148": 2, //labplass 15
+	//"129.241.187.142": 3, //labplass 14
+	"129.241.187.152": 3, //labplass 13
+}
 
 //in port 4
 const PORT4 = 3

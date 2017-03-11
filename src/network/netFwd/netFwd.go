@@ -3,9 +3,12 @@ package netFwd
 import (
 	. "../../defs/"
 	"../bcast"
+	"log"
 	"math/rand"
-	"time"
+	"net"
 	. "strconv"
+	"strings"
+	"time"
 )
 
 //todo
@@ -13,7 +16,7 @@ import (
 
 //myID, får id til heisen, må fåes rett etter oppstart, fra main
 //masterID - tilsvarende myID
-func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus, buttonNew chan int, buttonCompleted chan int, orders chan OrderQueue) {
+func SendToNetwork(myID <-chan int, masterID <-chan int, status <-chan ElevatorStatus, buttonNew <-chan int, buttonCompleted <-chan int, orders <-chan OrderQueue) {
 	rand.Seed(time.Now().UTC().UnixNano())
 	me := <-myID
 	master := <-masterID
@@ -55,8 +58,8 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 		case order := <-orders:
 			//println("SendToNetwork() got order")
 			orderNet := *NewOrderQueueNet()
-			for i := 0; i<3;i++{
-				for k,v := range(order.Elevator[i]) {
+			for i := 0; i < 3; i++ {
+				for k, v := range order.Elevator[i] {
 					orderNet.Elevator[i][Itoa(k)] = v
 				}
 			}
@@ -82,7 +85,7 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 			//println("SendToNetwork() got new me:", me)
 			continue
 		case master = <-masterID:
-			//println("SendToNetwork() got new master:", master)
+			println("SendToNetwork() got new master:", master)
 			continue
 		}
 	}
@@ -91,7 +94,7 @@ func SendToNetwork(myID chan int, masterID chan int, status chan ElevatorStatus,
 }
 
 //myID, får id til heisen, må fåes rett etter oppstart, fra main
-func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan ButtonMessage, buttonCompleted chan ButtonMessage, orders chan OrderMessage) {
+func RecieveFromNetwork(myID <-chan int, status chan<- StatusMessage, buttonNew chan<- ButtonMessage, buttonCompleted chan<- ButtonMessage, orders chan<- OrderMessage) {
 	sentAck := make(map[int64]bool)
 
 	statusMes := make(chan StatusMessage)
@@ -111,7 +114,7 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 		select {
 		case stat := <-statusMes:
 			//println("RecieveFromNetwork() got status dir:", stat.Message.Dir, " lastFloor:", stat.Message.LastFloor, " activeMotor:", stat.Message.ActiveMotor, " atFloor", stat.Message.AtFloor, "doorOpen", stat.Message.DoorOpen, " stat for me = ", stat.TargetElevator == me, " from elevator ", stat.ElevatorID, " with ID ", stat.MessageID)
-			if stat.TargetElevator == me || stat.TargetElevator ==EVERYONE{
+			if stat.TargetElevator == me || stat.TargetElevator == EVERYONE {
 				stat.TargetElevator = me
 				ackTx <- AckMessage{stat.MessageID, 0, me, stat.ElevatorID}
 				if !sentAck[stat.MessageID] {
@@ -124,7 +127,7 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 			}
 		case button := <-buttonMes:
 			//println("RecieveFromNetwork() got button:", button.Message, " button for me = ", button.TargetElevator == me, " from elevator ", button.ElevatorID, " with ID ", button.MessageID)
-			if button.TargetElevator == me || button.TargetElevator ==EVERYONE{
+			if button.TargetElevator == me || button.TargetElevator == EVERYONE {
 				button.TargetElevator = me
 				ackTx <- AckMessage{button.MessageID, 1, me, button.ElevatorID}
 				//println("RecieveFromNetwork() sent ack for ", button.MessageID)
@@ -143,27 +146,40 @@ func RecieveFromNetwork(myID chan int, status chan StatusMessage, buttonNew chan
 			}
 		case order := <-ordersMes:
 			//println("RecieveFromNetwork() got order for me = ", order.TargetElevator, me, " from elevator ", order.ElevatorID, " with ID ", order.MessageID)
-			if order.TargetElevator == me || order.TargetElevator ==EVERYONE{
+			if order.TargetElevator == me || order.TargetElevator == EVERYONE {
 				order.TargetElevator = me
 				ackTx <- AckMessage{order.MessageID, 2, me, order.ElevatorID}
 				if !sentAck[order.MessageID] {
 					orderNet := *NewOrderQueue()
-					for i := 0; i<3;i++{
-						for k,v := range(order.Message.Elevator[i]) {
+					for i := 0; i < 3; i++ {
+						for k, v := range order.Message.Elevator[i] {
 							l, _ := Atoi(k)
 							orderNet.Elevator[i][l] = v
 						}
 					}
-					ordersNet := OrderMessage{orderNet,order.ElevatorID,order.TargetElevator,order.MessageID}
+					ordersNet := OrderMessage{orderNet, order.ElevatorID, order.TargetElevator, order.MessageID}
 					sentAck[order.MessageID] = true
 					orders <- ordersNet
 					//println("RecieveFromNetwork() forwarded order with ID ", order.MessageID)
-				}	else{
-				//println("RecieveFromNetwork() Already sent ack for order with ID", order.MessageID)
-			}
+				} else {
+					//println("RecieveFromNetwork() Already sent ack for order with ID", order.MessageID)
+				}
 			}
 		}
 	}
 
 	//random := rand.Int63()
+}
+
+func GetOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().String()
+	idx := strings.LastIndex(localAddr, ":")
+
+	return localAddr[0:idx]
 }

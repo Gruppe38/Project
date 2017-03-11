@@ -14,3 +14,11 @@ Idé: endre messageID til å starte på 0 og telle oppover, delt for alle typer 
   
   
   ip for labplass 14: 129.241.187.142
+  ip for labplass 14: 129.241.187.148
+  ip for labplass 13: 129.241.187.152
+  
+  freezelog:
+  1: localElevator() got new movinst {false false 2}
+  2: New button: DOWN#
+  3 recieved statusReport in createORderQueue(): from elevator 1
+  4 watchIncommindOrders() did not send button CDM2
