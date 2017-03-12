@@ -50,8 +50,6 @@ func main() {
 		movementReport := make(chan ElevatorMovement)
 
 		buttonReports := make(chan int)
-		myIDSend := make(chan int)
-		myIDRecieve := make(chan int)
 		masterIDUpdate := make(chan int)
 		buttonNewSend := make(chan int)
 		buttonCompletedSend := make(chan int)
@@ -72,8 +70,8 @@ func main() {
 		go MonitorOrderbuttons(buttonReports)
 		go CreateOrderQueue(stateUpdate, peerUpdate, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport)
 
-		go SendToNetwork(myIDSend, masterIDUpdate, statusReportsSend1, buttonNewSend, buttonCompletedSend, orderQueueReport)
-		go RecieveFromNetwork(myIDRecieve, statusMessage, buttonNewRecieve, buttonCompletedRecieve, orderMessage)
+		go SendToNetwork(myID, masterIDUpdate, statusReportsSend1, buttonNewSend, buttonCompletedSend, orderQueueReport)
+		go RecieveFromNetwork(myID, statusMessage, buttonNewRecieve, buttonCompletedRecieve, orderMessage)
 
 		go Destination(statusReportsSend2, orderMessageSend1, movementInstructions)
 		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2)
@@ -88,7 +86,6 @@ func main() {
 		masterBroadcastEnable := make(chan bool)
 		go Receiver(11038, masterBroadcast)
 		go Transmitter(11038, strconv.Itoa(myID), masterBroadcastEnable)
-		masterBroadcastEnable <- false
 		if numberOfPeers == 0 {
 			Println("I am master", myID)
 			masterID = myID
@@ -102,11 +99,9 @@ func main() {
 			Printf("  Lost:     %q\n", m.Lost)
 			masterID, _ = strconv.Atoi(m.Peers[0])
 			Println("I am not master, master is", masterID)
+			masterBroadcastEnable <- false
 			state = Slave
 		}
-
-		myIDSend <- myID
-		myIDRecieve <- myID
 		masterIDUpdate <- masterID
 
 		/*for {

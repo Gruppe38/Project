@@ -16,9 +16,8 @@ import (
 
 //myID, får id til heisen, må fåes rett etter oppstart, fra main
 //masterID - tilsvarende myID
-func SendToNetwork(myID <-chan int, masterID <-chan int, status <-chan ElevatorStatus, buttonNew <-chan int, buttonCompleted <-chan int, orders <-chan OrderQueue) {
+func SendToNetwork(me int, masterID <-chan int, status <-chan ElevatorStatus, buttonNew <-chan int, buttonCompleted <-chan int, orders <-chan OrderQueue) {
 	rand.Seed(time.Now().UTC().UnixNano())
-	me := <-myID
 	master := <-masterID
 
 	//unconfirmedStatus := make(map[int64]StatusMessage)
@@ -81,9 +80,6 @@ func SendToNetwork(myID <-chan int, masterID <-chan int, status <-chan ElevatorS
 				}*/
 				break
 			}
-		case me = <-myID:
-			//println("SendToNetwork() got new me:", me)
-			continue
 		case master = <-masterID:
 			println("SendToNetwork() got new master:", master)
 			continue
@@ -94,7 +90,7 @@ func SendToNetwork(myID <-chan int, masterID <-chan int, status <-chan ElevatorS
 }
 
 //myID, får id til heisen, må fåes rett etter oppstart, fra main
-func RecieveFromNetwork(myID <-chan int, status chan<- StatusMessage, buttonNew chan<- ButtonMessage, buttonCompleted chan<- ButtonMessage, orders chan<- OrderMessage) {
+func RecieveFromNetwork(me int, status chan<- StatusMessage, buttonNew chan<- ButtonMessage, buttonCompleted chan<- ButtonMessage, orders chan<- OrderMessage) {
 	sentAck := make(map[int64]bool)
 
 	statusMes := make(chan StatusMessage)
@@ -105,7 +101,6 @@ func RecieveFromNetwork(myID <-chan int, status chan<- StatusMessage, buttonNew 
 	go bcast.Receiver(13038, statusMes, buttonMes, ordersMes)
 	go bcast.Transmitter(14038, ackTx)
 
-	me := <-myID
 	//todo
 	//sjekk om melding er til meg
 	//Send bekreftelse
