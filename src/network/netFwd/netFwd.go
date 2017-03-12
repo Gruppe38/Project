@@ -4,11 +4,11 @@ import (
 	. "../../defs/"
 	"../bcast"
 	"log"
-	"math/rand"
+	//"math/rand"
 	"net"
 	. "strconv"
 	"strings"
-	"time"
+	//"time"
 )
 
 //todo
@@ -18,9 +18,9 @@ import (
 //masterID - tilsvarende myID
 
 func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels SendChannels) {
-	rand.Seed(time.Now().UTC().UnixNano())
 	master := <-masterID
 	state := <-stateUpdate
+	var messageCounter int64 = 0
 
 	//unconfirmedStatus := make(map[int64]StatusMessage)
 	//unconfirmedButton := make(map[int64]ButtonMessage)
@@ -43,21 +43,24 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 					break
 				case stat := <-channels.Status:
 					//println("SendToNetwork() got status dir:", stat.Dir, " lastFloor:", stat.LastFloor, " activeMotor:", stat.ActiveMotor, " atFloor", stat.AtFloor, "doorOpen", stat.DoorOpen)
-					messageID := rand.Int63()
+					messageID := messageCounter
+					messageCounter++
 					statMes := StatusMessage{stat, me, master, messageID}
 					//unconfirmedStatus[messageID] = statMes
 					statusMes <- statMes
 					//println("SendToNetwork() sent status dir:", stat.Dir," lastFloor: ", stat.LastFloor, " activeMotor:" ,stat.ActiveMotor, " atFloor", stat.AtFloor, "doorOpen", stat.DoorOpen)
 				case button := <-channels.ButtonNew:
 					//println("SendToNetwork() got new button", button)
-					messageID := rand.Int63()
+					messageID := messageCounter
+					messageCounter++
 					butMes := ButtonMessage{button, true, me, master, messageID}
 					//unconfirmedButton[messageID] = butMes
 					buttonMes <- butMes
 					//println("SendToNetwork() sent new button", button)
 				case button := <-channels.ButtonCompleted:
 					//println("SendToNetwork() got completed button", button)
-					messageID := rand.Int63()
+					messageID := messageCounter
+					messageCounter++
 					butMes := ButtonMessage{button, false, me, master, messageID}
 					//unconfirmedButton[messageID] = butMes
 					buttonMes <- butMes
@@ -70,7 +73,8 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 							orderNet.Elevator[i][Itoa(k)] = v
 						}
 					}
-					messageID := rand.Int63()
+					messageID := messageCounter
+					messageCounter++
 					ordMes := OrderMessageNet{orderNet, me, EVERYONE, messageID}
 					//unconfirmedOrders[messageID] = ordMes
 					ordersMes <- ordMes
@@ -108,6 +112,9 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) {
 	state := <-stateUpdate
 
+	lastStatusMessageID := [3]int{}
+	lastOrderMessageID := [3]int{}
+
 	sentAck := make(map[int64]bool)
 	statusMes := make(chan StatusMessage)
 	buttonMes := make(chan ButtonMessage)
@@ -132,16 +139,20 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 				case stat := <-statusMes:
 					println("RecieveFromNetwork() got status from elevator ", stat.ElevatorID, " with target ", stat.TargetElevator)
 					if stat.TargetElevator == me || stat.TargetElevator == EVERYONE {
-						stat.TargetElevator = me
-						ackTx <- AckMessage{stat.MessageID, 0, me, stat.ElevatorID}
-						if !sentAck[stat.MessageID] {
-							sentAck[stat.MessageID] = true
-							println("Trying to send to channel status")
-							channels.Status <- stat
-							println("Sent to channel status")
-							//println("RecieveFromNetwork() sent status with ID ", stat.MessageID)
-						} else {
-							//println("RecieveFromNetwork() Already sent ack for status with ID ", stat.MessageID)
+						currentStatusMessageID := stat.MessageID
+						ackTx <- AckMessage{currentStatusMessageID, 0, me, currentStatusMessageID}
+						if lastStatusMessageID[stat.ElevatorID-1] < currentStatusMessageID {
+							lastStatusMessageID[stat.ElevatorID-1] = currentStatusMessageID
+							stat.TargetElevator = me
+							if !sentAck[currentStatusMessageID] {
+								sentAck[currentStatusMessageID] = true
+								println("Trying to send to channel status")
+								channels.Status <- stat
+								println("Sent to channel status")
+								//println("RecieveFromNetwork() sent status with ID ", stat.MessageID)
+							} else {
+								//println("RecieveFromNetwork() Already sent ack for status with ID ", stat.MessageID)
+							}
 						}
 					}
 				case button := <-buttonMes:
