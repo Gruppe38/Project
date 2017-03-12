@@ -36,6 +36,7 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 	for {
 		switch state {
 		case Master, Slave:
+			println("Network sender in state slave or master")
 			for state == Master || state == Slave {
 				select {
 				case state = <-stateUpdate:
@@ -62,7 +63,7 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 					buttonMes <- butMes
 					//println("SendToNetwork() sent completed button", button)
 				case order := <-channels.Orders:
-					//println("SendToNetwork() got order")
+					println("SendToNetwork() got order")
 					orderNet := *NewOrderQueueNet()
 					for i := 0; i < 3; i++ {
 						for k, v := range order.Elevator[i] {
@@ -93,6 +94,7 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 				}
 			}
 		case NoNetwork:
+			println("Network sender in state NoNetwork")
 			for state == NoNetwork {
 				state = <-stateUpdate
 			}
@@ -122,6 +124,7 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 	for {
 		switch state {
 		case Slave, Master:
+			println("Network reciver in state slave or master")
 			for state == Master || state == Slave {
 				select {
 				case state = <-stateUpdate:
@@ -190,6 +193,7 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 				}
 			}
 		case NoNetwork:
+			println("Network reciver in state NoNetwork")
 			for state == NoNetwork {
 				state = <-stateUpdate
 			}
@@ -199,27 +203,35 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 }
 
 func DirectTransfer(me int, stateUpdate chan int, send SendChannels, recieve RecieveChannels) {
+	println("Direct Transfer started")
 	state := NoNetwork
 	for state == NoNetwork {
 		select {
 		case state = <-stateUpdate:
 			break
 		case status := <-send.Status:
+			println("Direct transfer got new status")
 			statMes := StatusMessage{status, me, me, 0}
 			recieve.Status <- statMes
+			println("Direct transfer sent new status")
 		case order := <-send.ButtonNew:
+			println("Direct transfer got new order")
 			statMes := ButtonMessage{order, true, me, me, 0}
 			recieve.ButtonNew <- statMes
+			println("Direct transfer sent new order")
 		case order := <-send.ButtonCompleted:
+			println("Direct transfer got completed order")
 			statMes := ButtonMessage{order, false, me, me, 0}
 			recieve.ButtonCompleted <- statMes
+			println("Direct transfer sent completed order")
 		case orderQueue := <-send.Orders:
-			println("Direct transfer got new order")
+			println("Direct transfer got new orderqueue")
 			orderMes := OrderMessage{orderQueue, me, me, 0}
 			recieve.Orders <- orderMes
-			println("Direct transfer sent new order")
+			println("Direct transfer sent new orderqueue")
 		}
 	}
+	println("Direct Transfer ending")
 }
 
 func GetOutboundIP() string {

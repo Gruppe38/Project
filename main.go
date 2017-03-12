@@ -44,32 +44,33 @@ func main() {
 		masterBroadcast := make(chan PeerUpdate)
 		masterBroadcastEnable := make(chan bool)
 
+		statusReportsSend1 := make(chan ElevatorStatus)
+		buttonNewSend := make(chan int)
+		buttonCompletedSend := make(chan int)
+		orderQueueReport := make(chan OrderQueue)
+		sendChannels := SendChannels{statusReportsSend1, buttonNewSend, buttonCompletedSend, orderQueueReport}
+
+		statusMessage := make(chan StatusMessage, 99)
+		buttonNewRecieve := make(chan ButtonMessage, 99)
+		buttonCompletedRecieve := make(chan ButtonMessage, 99)
+		orderMessage := make(chan OrderMessage, 99)
+		recieveChannels := RecieveChannels{statusMessage, buttonNewRecieve, buttonCompletedRecieve, orderMessage}
+
 		movementInstructions := make(chan ElevatorMovement)
 		statusReports := make(chan ElevatorStatus)
-		statusReportsSend1 := make(chan ElevatorStatus)
 		statusReportsSend2 := make(chan ElevatorStatus)
 		movementReport := make(chan ElevatorMovement)
 
 		buttonReports := make(chan int)
-		buttonNewSend := make(chan int)
-		buttonCompletedSend := make(chan int)
-		orderQueueReport := make(chan OrderQueue)
 		stateUpdate := make(chan int)
 		stateUpdateSend1 := make(chan int)
 		stateUpdateSend2 := make(chan int)
 		stateUpdateSend3 := make(chan int)
 
-		statusMessage := make(chan StatusMessage)
-		buttonNewRecieve := make(chan ButtonMessage)
-		buttonCompletedRecieve := make(chan ButtonMessage)
-		orderMessage := make(chan OrderMessage)
 		orderMessageSend1 := make(chan OrderMessage)
 		orderMessageSend2 := make(chan OrderMessage)
 		orderMessageSend3 := make(chan OrderMessage)
 		confirmedQueue := make(chan map[int]bool)
-
-		sendChannels := SendChannels{statusReportsSend1, buttonNewSend, buttonCompletedSend, orderQueueReport}
-		recieveChannels := RecieveChannels{statusMessage, buttonNewRecieve, buttonCompletedRecieve, orderMessage}
 
 		go Receiver(12038, peerUpdateCh)
 		go Transmitter(12038, strconv.Itoa(myID), peerTxEnable)
@@ -232,7 +233,7 @@ func main() {
 				}
 			case NoNetwork:
 				//Internal buttons skal fortsatt betjenes.
-				println("Detected lost connection and switched state")
+				println("Detected lost connection and switched state to NoNetwork")
 				stateUpdate <- state
 				stateUpdate2 := make(chan int)
 				peerUpdate <- PeerStatus{myID, true}
