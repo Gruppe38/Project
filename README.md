@@ -9,6 +9,8 @@ Ting som må gjøres før frist:
     -Fungerer solo, teste for fler
 -Watchdog fungerer ikke
 -state deadElevator
+    -Hvis eneste heis, behold eksterne ordre
+    -Hvis ikke, forkast. 
 -Generell broadcast funksjon som tar in interface, sender til 1-n kanaler
 -Rydde opp koden
 
