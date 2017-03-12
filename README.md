@@ -5,7 +5,6 @@ Ting som må gjøres før frist:
     -Den vi sender til forsvinner før vi får ack
         -sende til slave: slutt å sende
         -sende til master: vent på ny master, send til ny master.
-            -Kan takles generelt ved å sende all ubekrefa meldinger til master, til nye master ved bytte.
     -Fungerer solo, teste for fler
 -Watchdog fungerer ikke
 -state deadElevator

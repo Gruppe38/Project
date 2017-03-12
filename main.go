@@ -23,6 +23,7 @@ func main() {
 	state := Init
 
 	sucess := IoInit()
+	Println("Init sucess: ", sucess)
 	//SimInit()
 	//sucess := true
 
@@ -59,6 +60,7 @@ func main() {
 		movementInstructions := make(chan ElevatorMovement)
 		statusReports := make(chan ElevatorStatus)
 		statusReportsSend2 := make(chan ElevatorStatus)
+		statusReportsSend3 := make(chan ElevatorStatus)
 		movementReport := make(chan ElevatorMovement)
 
 		buttonReports := make(chan int)
@@ -87,7 +89,7 @@ func main() {
 
 		go CreateOrderQueue(stateUpdateSend1, peerUpdate, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport, orderMessageSend3)
 		go Destination(statusReportsSend2, orderMessageSend1, movementInstructions)
-		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2)
+		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
 		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2, orderMessageSend3)
 		go WatchCompletedOrders(movementReport, buttonCompletedSend)
 		go WatchIncommingOrders(buttonReports, confirmedQueue, buttonNewSend)
@@ -167,6 +169,10 @@ func main() {
 						Printf("  Masters:    %q\n", m.Peers)
 						Printf("  New:      %q\n", m.New)
 						Printf("  Lost:     %q\n", m.Lost)
+					case status := <-statusReportsSend3:
+						if status.Timeout {
+							state = DeadElevator
+						}
 					}
 				}
 			case Slave:
@@ -229,6 +235,10 @@ func main() {
 								}
 							}
 						}
+					case status := <-statusReportsSend3:
+						if status.Timeout {
+							state = DeadElevator
+						}
 					}
 				}
 			case NoNetwork:
@@ -239,20 +249,26 @@ func main() {
 				peerUpdate <- PeerStatus{myID, true}
 				DirectTransfer(myID, stateUpdate2, sendChannels, recieveChannels)
 				for state == NoNetwork {
-					p := <-peerUpdateCh
-					if p.New != "" {
-						numberOfPeers := len(p.Peers)
-						i, _ := strconv.Atoi(p.New)
-						if i > 0 {
-							Println("in NoNetwork newID as int =", i)
-							peerUpdate <- PeerStatus{i, true}
-							Println("Gained peer", p.New)
+					select {
+					case p := <-peerUpdateCh:
+						if p.New != "" {
+							numberOfPeers := len(p.Peers)
+							i, _ := strconv.Atoi(p.New)
+							if i > 0 {
+								Println("in NoNetwork newID as int =", i)
+								peerUpdate <- PeerStatus{i, true}
+								Println("Gained peer", p.New)
+							}
+							println("Deciding if we are master or not:", numberOfPeers)
+							if numberOfPeers == 1 {
+								state = Master
+							} else {
+								state = Slave
+							}
 						}
-						println("Deciding if we are master or not:", numberOfPeers)
-						if numberOfPeers == 1 {
-							state = Master
-						} else {
-							state = Slave
+					case status := <-statusReportsSend3:
+						if status.Timeout {
+							state = DeadElevator
 						}
 					}
 				}
@@ -263,10 +279,29 @@ func main() {
 				Println("Switching state to ", state)*/
 
 			case DeadElevator:
+				Println("Entering state deadElevator")
 				//Ingen knapper kan betjenes
 				//Late som død for nettverket?
+				peerTxEnable <- false
+				masterBroadcastEnable <- false
 				for state == DeadElevator {
-					continue
+					select {
+					case status := <-statusReportsSend3:
+						if !status.Timeout {
+							state = DeadElevator
+						}
+					case <-peerUpdateCh:
+					case <-masterBroadcast:
+					}
+				}
+				peerTxEnable <- true
+				p := <-peerUpdateCh
+				numberOfPeers := len(p.Peers)
+				println("Deciding if we are master or not after reverting from timout:", numberOfPeers)
+				if numberOfPeers == 1 {
+					state = Master
+				} else {
+					state = Slave
 				}
 			}
 		}
