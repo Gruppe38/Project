@@ -38,6 +38,7 @@ Overføre fil: "scp -r plasspåpc brukernavn@ip:plasspåmotakerpc"
   ip for labplass 15: 129.241.187.148
   ip for labplass 13: 129.241.187.152
   ip for labplass 12: 129.241.187.144
+  ip for labplass 19: 129.241.187.157
   
   freezelog:
   1: localElevator() got new movinst {false false 2}

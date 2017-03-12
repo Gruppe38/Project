@@ -63,7 +63,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 					println("CreateOrderQueue() was told to switch state to", state, "while master")
 					break
 				case peer := <-peerUpdate:
-					Println("new peer update", peer)
+					Println("new peer update as master", peer)
 					activeElevators[peer.ID-1] = peer.Status
 				case status := <-statusReport:
 					Println("recieved statusReport in createOrderQueue(): from elevator", status.ElevatorID)
@@ -121,7 +121,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 				println("CreateOrderQueue() was told to switch state to", state, "while not master")
 				break
 			case peer := <-peerUpdate:
-				Println("new peer update", peer)
+				Println("new peer update while not master", peer)
 				activeElevators[peer.ID-1] = peer.Status
 			case <-statusReport:
 			case <-completedOrders:
