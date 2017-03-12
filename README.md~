@@ -8,6 +8,7 @@ Ting som må gjøres før frist:
             -Kan takles generelt ved å sende all ubekrefa meldinger til master, til nye master ved bytte.
     -Fungerer solo, teste for fler
 -Watchdog fungerer ikke
+-state deadElevator
 -Generell broadcast funksjon som tar in interface, sender til 1-n kanaler
 -Rydde opp koden
 

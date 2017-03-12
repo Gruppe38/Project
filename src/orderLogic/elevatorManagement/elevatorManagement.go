@@ -359,8 +359,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 //statusReport inneholder heistatus, kommer fra watchElevator, som får kannalen via LocalElevator
 //Send 1 til createOrderQueue, via nettverk
 //send2 til destination
-//send3 til watchCompletedOrders
-func BroadcastElevatorStatus(statusReport <-chan ElevatorStatus, send1, send2 chan<- ElevatorStatus) {
+func BroadcastElevatorStatus(statusReport <-chan ElevatorStatus, send1, send2, send3 chan<- ElevatorStatus) {
 	quit := false
 	for !quit {
 		select {
@@ -368,9 +367,11 @@ func BroadcastElevatorStatus(statusReport <-chan ElevatorStatus, send1, send2 ch
 			if t {
 				send1 <- status
 				send2 <- status
+				send3 <- status
 			} else {
 				close(send1)
 				close(send2)
+				close(send3)
 				quit = true
 			}
 		}
