@@ -25,7 +25,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 	state := <-stateUpdate
 	for {
 		switch state {
-		case Master:
+		case Master, NoNetwork:
 			for i, active := range activeElevators {
 				if !active {
 					for order, value := range orders.Elevator[i] {
@@ -50,6 +50,8 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 							}
 							println("CreateOrderQueue assigned", BtoS(order), "to: ", i+1)
 							orders.Elevator[cheapestElevator][order] = true
+						} else if value {
+							orders.Elevator[i][order] = true
 						}
 					}
 				}
@@ -57,7 +59,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 			ordersCopy := *NewOrderQueue()
 			copy(&orders, &ordersCopy)
 			orderQueueReport <- ordersCopy
-			for state == Master {
+			for state == Master || state == NoNetwork {
 				select {
 				case state = <-stateUpdate:
 					println("CreateOrderQueue() was told to switch state to", state, "while master")
@@ -76,7 +78,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 					ordersCopy := *NewOrderQueue()
 					copy(&orders, &ordersCopy)
 					orderQueueReport <- ordersCopy
-					//Println("Ordre har blitt clearet og oppdatert orderQueue har blitt sendt")
+					Println("Ordre har blitt clearet og oppdatert orderQueue har blitt sendt")
 				case order := <-newOrders:
 					println("CreateOrderQueue got button(): ", BtoS(order.Message))
 					if order.Message == BUTTON_COMMAND1 || order.Message == BUTTON_COMMAND2 ||
@@ -134,6 +136,10 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 }
 
 func copy(original *OrderQueue, clone *OrderQueue) {
+	*clone = *original
+}
+
+func copyMap(original *map[int]bool, clone *map[int]bool) {
 	*clone = *original
 }
 
@@ -499,7 +505,9 @@ func CreateCurrentQueue(orderQueueReports <-chan OrderMessage, confirmedQueue ch
 					}
 				}
 			}
-			confirmedQueue <- currentQueue
+			ordersCopy := make(map[int]bool)
+			copyMap(&currentQueue, &ordersCopy)
+			confirmedQueue <- ordersCopy
 			toggleLights(currentQueue)
 		}
 	}

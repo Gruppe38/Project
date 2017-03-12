@@ -1,8 +1,17 @@
 package definitions
 
-type HelloMsg struct {
-	Message string
-	Iter    int
+type SendChannels struct {
+	Status          chan ElevatorStatus
+	ButtonNew       chan int
+	ButtonCompleted chan int
+	Orders          chan OrderQueue
+}
+
+type RecieveChannels struct {
+	Status          chan StatusMessage
+	ButtonNew       chan ButtonMessage
+	ButtonCompleted chan ButtonMessage
+	Orders          chan OrderMessage
 }
 
 type ElevatorMovement struct {
@@ -119,6 +128,7 @@ const (
 	NoNetwork    int = 3
 	DeadElevator int = 4
 )
+
 const EVERYONE = 0
 
 //Definitions for Elevator IO

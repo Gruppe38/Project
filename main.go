@@ -55,6 +55,9 @@ func main() {
 		buttonCompletedSend := make(chan int)
 		orderQueueReport := make(chan OrderQueue)
 		stateUpdate := make(chan int)
+		stateUpdateSend1 := make(chan int)
+		stateUpdateSend2 := make(chan int)
+		stateUpdateSend3 := make(chan int)
 
 		statusMessage := make(chan StatusMessage)
 		buttonNewRecieve := make(chan ButtonMessage)
@@ -65,18 +68,23 @@ func main() {
 		orderMessageSend3 := make(chan OrderMessage)
 		confirmedQueue := make(chan map[int]bool)
 
+		sendChannels := SendChannels{statusReportsSend1, buttonNewSend, buttonCompletedSend, orderQueueReport}
+		recieveChannels := RecieveChannels{statusMessage, buttonNewRecieve, buttonCompletedRecieve, orderMessage}
+
 		go Receiver(12038, peerUpdateCh)
 		go Transmitter(12038, strconv.Itoa(myID), peerTxEnable)
 		go Receiver(11038, masterBroadcast)
 		go Transmitter(11038, strconv.Itoa(myID), masterBroadcastEnable)
 
+		go broadcastStateUpdates(stateUpdate, stateUpdateSend1, stateUpdateSend2, stateUpdateSend3)
+
 		go LocalElevator(movementInstructions, statusReports, movementReport)
 		go MonitorOrderbuttons(buttonReports)
 
-		go SendToNetwork(myID, masterIDUpdate, statusReportsSend1, buttonNewSend, buttonCompletedSend, orderQueueReport)
-		go RecieveFromNetwork(myID, statusMessage, buttonNewRecieve, buttonCompletedRecieve, orderMessage)
+		go SendToNetwork(myID, masterIDUpdate, stateUpdateSend2, sendChannels)
+		go RecieveFromNetwork(myID, stateUpdateSend3, recieveChannels)
 
-		go CreateOrderQueue(stateUpdate, peerUpdate, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport, orderMessageSend3)
+		go CreateOrderQueue(stateUpdateSend1, peerUpdate, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport, orderMessageSend3)
 		go Destination(statusReportsSend2, orderMessageSend1, movementInstructions)
 		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2)
 		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2, orderMessageSend3)
@@ -226,6 +234,9 @@ func main() {
 				//Internal buttons skal fortsatt betjenes.
 				println("Detected lost connection and switched state")
 				stateUpdate <- state
+				stateUpdate2 := make(chan int)
+				peerUpdate <- PeerStatus{myID, true}
+				DirectTransfer(myID, stateUpdate2, sendChannels, recieveChannels)
 				for state == NoNetwork {
 					p := <-peerUpdateCh
 					if p.New != "" {
@@ -244,6 +255,7 @@ func main() {
 						}
 					}
 				}
+				stateUpdate2 <- state
 				/*Println("Switching state from ", state)
 				establishConnection(peerUpdateCh, peerTxEnable, masterIDUpdate,
 					masterBroadcast, masterBroadcastEnable, myID, &state)
@@ -297,4 +309,23 @@ func establishConnection(peerUpdateCh <-chan PeerUpdate, peerTxEnable chan<- boo
 		*state = Slave
 	}
 	masterIDUpdate <- masterID
+}
+
+func broadcastStateUpdates(stateUpdate <-chan int, send1, send2, send3 chan<- int) {
+	quit := false
+	for !quit {
+		select {
+		case status, t := <-stateUpdate:
+			if t {
+				send1 <- status
+				send2 <- status
+				send3 <- status
+			} else {
+				close(send1)
+				close(send2)
+				close(send3)
+				quit = true
+			}
+		}
+	}
 }

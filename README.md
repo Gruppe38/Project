@@ -8,8 +8,7 @@ Ting som må gjøres før frist:
         -sende til slave: slutt å sende
         -sende til master: vent på ny master, send til ny master.
             -Kan takles generelt ved å sende all ubekrefa meldinger til master, til nye master ved bytte.
-
-
+-Generell broadcast funksjon som tar in interface, sender til 1-n kanaler
 
 
 ..# Project.
