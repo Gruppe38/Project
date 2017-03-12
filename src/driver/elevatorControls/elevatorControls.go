@@ -129,10 +129,10 @@ func watchElevator(currentFloorChan chan<- int, statusReport chan<- ElevatorStat
 				doorOpen = driver.ReadBit(DOOR_OPEN)
 				idle = driver.ReadAnalog(MOTOR) == 0
 				if !idle {
-					println("Resetting timer to 5 sec")
+					//println("Resetting timer to 5 sec")
 					watchDog.Reset(5 * time.Second)
 				} else {
-					println("Stopping timer")
+					//println("Stopping timer")
 					if !watchDog.Stop() && timeout && i == -1 {
 						<-watchDog.C
 					}
@@ -164,10 +164,10 @@ func watchElevator(currentFloorChan chan<- int, statusReport chan<- ElevatorStat
 				doorOpen = doorOpenUpdate
 				idle = idleUdpdate
 				if !idle {
-					println("Resetting timer to 5 sec")
+					//println("Resetting timer to 5 sec")
 					watchDog.Reset(5 * time.Second)
 				} else {
-					println("Stopping timer")
+					//println("Stopping timer")
 					if !watchDog.Stop() && timeout && i == -1 {
 						<-watchDog.C
 					}

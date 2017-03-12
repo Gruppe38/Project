@@ -3,8 +3,13 @@ Ting som må gjøres før frist:
     Idé: Println(funksjonNavn() skal til å sende på kanalNavn) før hver gang noen skriver til en kanal. Burde la oss se hjem som "aktiverte" låsen.
 - Ny kostfunksjon
 - Fikse at knappetrykk blir sendt ved skifte av master/slaves
-
-
+    -ny master å lage ny kø fra gamle køen.
+- Nettverk, sende på nytt om vi ikke fikk ack
+    -Takle at en melding aldri kommer frem, uansett?
+    -Den vi sender til forsvinner før vi får ack
+        -sende til slave: slutt å sende
+        -sende til master: vent på ny master, send til ny master.
+            -Kan takles generelt ved å sende all ubekrefa meldinger til master, til nye master ved bytte.
 
 
 
@@ -26,13 +31,14 @@ Idé: endre messageID til å starte på 0 og telle oppover, delt for alle typer 
 Logge på annen pc: "ssh brukernavn@ip"
     eks: "ssh student@129.241.187.144"
 Overføre fil: "scp -r plasspåpc brukernavn@ip:plasspåmotakerpc"
-    eks: scp -r ~/Documents/Gruppe38/project/main student@129.241.187.144:~/Documents/gruppe38
+    eks: "scp -r ~/Documents/Gruppe38/project/main student@129.241.187.144:~/Documents/gruppe38"
 
   
   ip for labplass 14: 129.241.187.142 //Ikke bruk denne før den er fikset
   ip for labplass 15: 129.241.187.148
   ip for labplass 13: 129.241.187.152
   ip for labplass 12: 129.241.187.144
+  ip for labplass 19: 129.241.187.157
   
   freezelog:
   1: localElevator() got new movinst {false false 2}

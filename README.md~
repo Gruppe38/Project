@@ -2,10 +2,14 @@ Ting som må gjøres før frist:
 - Fikse/finne ut av deadlock
     Idé: Println(funksjonNavn() skal til å sende på kanalNavn) før hver gang noen skriver til en kanal. Burde la oss se hjem som "aktiverte" låsen.
 - Ny kostfunksjon
-- myID er en kanal, men endres ikke så kan gjøres om til en variabel
 - Fikse at knappetrykk blir sendt ved skifte av master/slaves
-
-
+    -ny master å lage ny kø fra gamle køen.
+- Nettverk, sende på nytt om vi ikke fikk ack
+    -Takle at en melding aldri kommer frem, uansett?
+    -Den vi sender til forsvinner før vi får ack
+        -sende til slave: slutt å sende
+        -sende til master: vent på ny master, send til ny master.
+            -Kan takles generelt ved å sende all ubekrefa meldinger til master, til nye master ved bytte.
 
 
 
@@ -27,7 +31,7 @@ Idé: endre messageID til å starte på 0 og telle oppover, delt for alle typer 
 Logge på annen pc: "ssh brukernavn@ip"
     eks: "ssh student@129.241.187.144"
 Overføre fil: "scp -r plasspåpc brukernavn@ip:plasspåmotakerpc"
-    eks: scp -r ~/Documents/Gruppe38/project/main student@129.241.187.144:~/Documents/gruppe38
+    eks: "scp -r ~/Documents/Gruppe38/project/main student@129.241.187.144:~/Documents/gruppe38"
 
   
   ip for labplass 14: 129.241.187.142 //Ikke bruk denne før den er fikset

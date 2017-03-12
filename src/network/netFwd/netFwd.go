@@ -90,6 +90,7 @@ func SendToNetwork(me int, masterID <-chan int, status <-chan ElevatorStatus, bu
 }
 
 //myID, får id til heisen, må fåes rett etter oppstart, fra main
+//Alle kanaler sender til createCUrrentQueue()
 func RecieveFromNetwork(me int, status chan<- StatusMessage, buttonNew chan<- ButtonMessage, buttonCompleted chan<- ButtonMessage, orders chan<- OrderMessage) {
 	sentAck := make(map[int64]bool)
 
@@ -108,20 +109,22 @@ func RecieveFromNetwork(me int, status chan<- StatusMessage, buttonNew chan<- Bu
 	for {
 		select {
 		case stat := <-statusMes:
-			//println("RecieveFromNetwork() got status dir:", stat.Message.Dir, " lastFloor:", stat.Message.LastFloor, " activeMotor:", stat.Message.ActiveMotor, " atFloor", stat.Message.AtFloor, "doorOpen", stat.Message.DoorOpen, " stat for me = ", stat.TargetElevator == me, " from elevator ", stat.ElevatorID, " with ID ", stat.MessageID)
+			println("RecieveFromNetwork() got status from elevator ", stat.ElevatorID, " with target ", stat.TargetElevator)
 			if stat.TargetElevator == me || stat.TargetElevator == EVERYONE {
 				stat.TargetElevator = me
 				ackTx <- AckMessage{stat.MessageID, 0, me, stat.ElevatorID}
 				if !sentAck[stat.MessageID] {
 					sentAck[stat.MessageID] = true
+					println("Trying to send to channel status")
 					status <- stat
+					println("Sent to channel status")
 					//println("RecieveFromNetwork() sent status with ID ", stat.MessageID)
 				} else {
 					//println("RecieveFromNetwork() Already sent ack for status with ID ", stat.MessageID)
 				}
 			}
 		case button := <-buttonMes:
-			//println("RecieveFromNetwork() got button:", button.Message, " button for me = ", button.TargetElevator == me, " from elevator ", button.ElevatorID, " with ID ", button.MessageID)
+			println("RecieveFromNetwork() got button:", button.Message, " from elevator ", button.ElevatorID, " with target ", button.TargetElevator)
 			if button.TargetElevator == me || button.TargetElevator == EVERYONE {
 				button.TargetElevator = me
 				ackTx <- AckMessage{button.MessageID, 1, me, button.ElevatorID}
@@ -129,10 +132,14 @@ func RecieveFromNetwork(me int, status chan<- StatusMessage, buttonNew chan<- Bu
 				if !sentAck[button.MessageID] {
 					sentAck[button.MessageID] = true
 					if button.MessageType {
+						println("Trying to send to channel buttonNew")
 						buttonNew <- button
+						println("Sent to channel buttonNew")
 						//println("RecieveFromNetwork() forwarded new button", button.Message)
 					} else {
+						println("Trying to send to channel buttonCompleted")
 						buttonCompleted <- button
+						println("Sent to channel buttonCompleted")
 						//println("RecieveFromNetwork() forwarded completed button", button.Message)
 					}
 				} else {
@@ -140,7 +147,7 @@ func RecieveFromNetwork(me int, status chan<- StatusMessage, buttonNew chan<- Bu
 				}
 			}
 		case order := <-ordersMes:
-			//println("RecieveFromNetwork() got order for me = ", order.TargetElevator, me, " from elevator ", order.ElevatorID, " with ID ", order.MessageID)
+			println("RecieveFromNetwork() got order from elevator ", order.ElevatorID, " with target ", order.TargetElevator)
 			if order.TargetElevator == me || order.TargetElevator == EVERYONE {
 				order.TargetElevator = me
 				ackTx <- AckMessage{order.MessageID, 2, me, order.ElevatorID}
@@ -154,7 +161,9 @@ func RecieveFromNetwork(me int, status chan<- StatusMessage, buttonNew chan<- Bu
 					}
 					ordersNet := OrderMessage{orderNet, order.ElevatorID, order.TargetElevator, order.MessageID}
 					sentAck[order.MessageID] = true
+					println("Trying to send to channel orders")
 					orders <- ordersNet
+					println("Sent to channel orders")
 					//println("RecieveFromNetwork() forwarded order with ID ", order.MessageID)
 				} else {
 					//println("RecieveFromNetwork() Already sent ack for order with ID", order.MessageID)

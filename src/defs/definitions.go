@@ -125,12 +125,14 @@ const EVERYONE = 0
 const IP1 = "129.241.187.144" //plass 12
 const IP2 = "129.241.187.148" //plass 14
 const IP3 = "129.241.187.142" //plass 15
+const IP4 = "129.241.187.157" //plass 19
 
 var IPToID = map[string]int{
 	"129.241.187.144": 1, //labplass 12
 	"129.241.187.148": 2, //labplass 15
 	//"129.241.187.142": 3, //labplass 14
-	"129.241.187.152": 3, //labplass 13
+	//"129.241.187.152": 3, //labplass 13
+	"129.241.187.157": 3,
 }
 
 //in port 4
