@@ -1,6 +1,4 @@
 Ting som må gjøres før frist:
-- Fikse/finne ut av deadlock
-    Idé: Println(funksjonNavn() skal til å sende på kanalNavn) før hver gang noen skriver til en kanal. Burde la oss se hjem som "aktiverte" låsen.
 - Ny kostfunksjon
 - Nettverk, sende på nytt om vi ikke fikk ack
     -Takle at en melding aldri kommer frem, uansett?
@@ -8,8 +6,11 @@ Ting som må gjøres før frist:
         -sende til slave: slutt å sende
         -sende til master: vent på ny master, send til ny master.
             -Kan takles generelt ved å sende all ubekrefa meldinger til master, til nye master ved bytte.
+    -Fungerer solo, teste for fler
+-Watchdog fungerer ikke
+-state deadElevator
 -Generell broadcast funksjon som tar in interface, sender til 1-n kanaler
-
+-Rydde opp koden
 
 ..# Project.
 
