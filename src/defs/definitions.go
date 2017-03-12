@@ -216,7 +216,7 @@ func BtoS(button int) string {
 	case BUTTON_DOWN3:
 		return "DOWN3"
 	case BUTTON_DOWN4:
-		return "DOWN5"
+		return "DOWN4"
 	case BUTTON_COMMAND1:
 		return "CDM1"
 	case BUTTON_COMMAND2:
