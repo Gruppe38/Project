@@ -127,7 +127,9 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 				activeElevators[peer.ID-1] = peer.Status
 			case <-statusReport:
 			case <-completedOrders:
+				Println("Throwing away completed order")
 			case <-newOrders:
+				Println("Throwing away new order")
 			case updatedOrderQueueMessage := <-orderQueueBackup:
 				orders = updatedOrderQueueMessage.Message
 			}
