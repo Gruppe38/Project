@@ -68,6 +68,7 @@ func main() {
 		stateUpdateSend1 := make(chan int)
 		stateUpdateSend2 := make(chan int)
 		stateUpdateSend3 := make(chan int)
+		pushOrdersToMaster := make(chan bool)
 
 		orderMessageSend1 := make(chan OrderMessage)
 		orderMessageSend2 := make(chan OrderMessage)
@@ -92,7 +93,7 @@ func main() {
 		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
 		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2, orderMessageSend3)
 		go WatchCompletedOrders(movementReport, buttonCompletedSend)
-		go WatchIncommingOrders(buttonReports, confirmedQueue, buttonNewSend)
+		go WatchIncommingOrders(buttonReports, confirmedQueue, buttonNewSend, pushOrdersToMaster)
 		go CreateCurrentQueue(orderMessageSend2, confirmedQueue)
 
 		establishConnection(peerUpdateCh, peerTxEnable, masterIDUpdate,
@@ -248,29 +249,49 @@ func main() {
 				stateUpdate <- state
 				stateUpdate2 := make(chan int)
 				peerUpdate <- PeerStatus{myID, true}
-				DirectTransfer(myID, stateUpdate2, sendChannels, recieveChannels)
+				numberOfPeers := 0
+				masterID := -1
+				stateUpdateDelay := time.NewTimer(45 * time.Millisecond)
+				stateUpdateDelay.Stop()
+				go DirectTransfer(myID, stateUpdate2, sendChannels, recieveChannels)
 				for state == NoNetwork {
 					select {
 					case p := <-peerUpdateCh:
-						if p.New != "" {
-							numberOfPeers := len(p.Peers)
-							i, _ := strconv.Atoi(p.New)
-							if i > 0 {
-								Println("in NoNetwork newID as int =", i)
-								peerUpdate <- PeerStatus{i, true}
-								Println("Gained peer", p.New)
-							}
-							println("Deciding if we are master or not:", numberOfPeers)
-							if numberOfPeers == 1 {
-								state = Master
-							} else {
-								state = Slave
-							}
+						Println("main  i no NoNetwork got peer update")
+						if numberOfPeers == 0 {
+							Println("main  i no NoNetwork started stateUpdateDelay")
+							stateUpdateDelay.Reset(100 * time.Millisecond)
 						}
+						numberOfPeers = len(p.Peers)
 					case status := <-statusReportsSend3:
+						Println("Main in state noNewtwork got status update")
 						if status.Timeout {
 							state = DeadElevator
 						}
+					case m := <-masterBroadcast:
+						if len(m.Peers) != 0 {
+							masterID, _ = strconv.Atoi(m.Peers[0])
+						} else {
+							masterID = -1
+						}
+					case <-stateUpdateDelay.C:
+						println("Deciding if we are master or not:", masterID)
+						if masterID == -1 {
+							state = Master
+							masterIDUpdate <- myID
+						} else {
+							state = Slave
+							masterIDUpdate <- masterID
+							pushOrdersToMaster <- true
+							<-pushOrdersToMaster
+						}
+						/*if numberOfPeers == 1 {
+							state = Master
+						} else {
+							state = Slave
+							pushOrdersToMaster <- true
+							<-pushOrdersToMaster
+						}*/
 					}
 				}
 				stateUpdate2 <- state

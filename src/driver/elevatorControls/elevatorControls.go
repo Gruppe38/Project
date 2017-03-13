@@ -159,8 +159,9 @@ func watchElevator(currentFloorChan chan<- int, statusReport chan<- ElevatorStat
 					setFloorIndicator(i)
 				}
 				last = i
+				Println("Elevator status is about to send. Elevator status: ", status)
 				statusReport <- status
-				//Println("Elevator status is sent. Elevator status: ", status)
+				Println("Elevator status is sent. Elevator status: ", status)
 			}
 			lastDirUpdate := driver.ReadBit(MOTORDIR)
 			doorOpenUpdate := driver.ReadBit(DOOR_OPEN)

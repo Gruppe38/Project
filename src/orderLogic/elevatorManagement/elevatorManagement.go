@@ -365,9 +365,13 @@ func BroadcastElevatorStatus(statusReport <-chan ElevatorStatus, send1, send2, s
 		select {
 		case status, t := <-statusReport:
 			if t {
+				Println("Sending 1")
 				send1 <- status
+				Println("Sending 2")
 				send2 <- status
+				Println("Sending 3")
 				send3 <- status
+				Println("sent all")
 			} else {
 				close(send1)
 				close(send2)
@@ -445,7 +449,7 @@ func WatchCompletedOrders(statusReport <-chan ElevatorMovement, buttonReports ch
 //buttonReports fra MonitorOrderbuttons
 //confirmedQueue fra createCurrentQueue
 //forwardOrders sender via nettverket, til createOrderQueue
-func WatchIncommingOrders(buttonReports <-chan int, confirmedQueue <-chan map[int]bool, forwardOrders chan int) {
+func WatchIncommingOrders(buttonReports <-chan int, confirmedQueue <-chan map[int]bool, forwardOrders chan int, pushOrdersToMaster chan bool) {
 	nonConfirmedQueue := make(map[int]bool)
 	confirmedOrders := make(map[int]bool)
 	flushTimer := time.NewTimer(100 * time.Millisecond)
@@ -470,6 +474,13 @@ func WatchIncommingOrders(buttonReports <-chan int, confirmedQueue <-chan map[in
 		case <-flushTimer.C:
 			nonConfirmedQueue = make(map[int]bool)
 			flushTimer.Reset(100 * time.Millisecond)
+		case <-pushOrdersToMaster:
+			for order, value := range confirmedOrders {
+				if value {
+					forwardOrders <- order
+				}
+			}
+			pushOrdersToMaster <- true
 			/*			for i := 0; i < N_FLOOR; i++ {
 						for j := 0; j < 3; j++{
 							button := OrderButtonMatrix[i][j]
