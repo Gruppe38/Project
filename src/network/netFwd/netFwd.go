@@ -42,6 +42,7 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 				case state = <-stateUpdate:
 					break
 				case stat := <-channels.Status:
+					println("SENDING NEW STATUS OVER NETWORK")
 					//println("SendToNetwork() got status dir:", stat.Dir, " lastFloor:", stat.LastFloor, " activeMotor:", stat.ActiveMotor, " atFloor", stat.AtFloor, "doorOpen", stat.DoorOpen)
 					messageID := messageCounter
 					messageCounter++
@@ -112,8 +113,8 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) {
 	state := <-stateUpdate
 
-	lastStatusMessageID := [3]int{}
-	lastOrderMessageID := [3]int{}
+	lastStatusMessageID := [3]int64{}
+	//lastOrderMessageID := [3]int64{}
 
 	sentAck := make(map[int64]bool)
 	statusMes := make(chan StatusMessage)
@@ -140,15 +141,15 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 					println("RecieveFromNetwork() got status from elevator ", stat.ElevatorID, " with target ", stat.TargetElevator)
 					if stat.TargetElevator == me || stat.TargetElevator == EVERYONE {
 						currentStatusMessageID := stat.MessageID
-						ackTx <- AckMessage{currentStatusMessageID, 0, me, currentStatusMessageID}
+						ackTx <- AckMessage{currentStatusMessageID, 0, me, stat.ElevatorID}
 						if lastStatusMessageID[stat.ElevatorID-1] < currentStatusMessageID {
 							lastStatusMessageID[stat.ElevatorID-1] = currentStatusMessageID
 							stat.TargetElevator = me
 							if !sentAck[currentStatusMessageID] {
 								sentAck[currentStatusMessageID] = true
-								println("Trying to send to channel status")
+								//println("Trying to send to channel status")
 								channels.Status <- stat
-								println("Sent to channel status")
+								//println("Sent to channel status")
 								//println("RecieveFromNetwork() sent status with ID ", stat.MessageID)
 							} else {
 								//println("RecieveFromNetwork() Already sent ack for status with ID ", stat.MessageID)
@@ -164,14 +165,14 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 						if !sentAck[button.MessageID] {
 							sentAck[button.MessageID] = true
 							if button.MessageType {
-								println("Trying to send to channel buttonNew")
+								//println("Trying to send to channel buttonNew")
 								channels.ButtonNew <- button
-								println("Sent to channel buttonNew")
+								//println("Sent to channel buttonNew")
 								//println("RecieveFromNetwork() forwarded new button", button.Message)
 							} else {
-								println("Trying to send to channel buttonCompleted")
+								//println("Trying to send to channel buttonCompleted")
 								channels.ButtonCompleted <- button
-								println("Sent to channel buttonCompleted")
+								//println("Sent to channel buttonCompleted")
 								//println("RecieveFromNetwork() forwarded completed button", button.Message)
 							}
 						} else {
@@ -193,9 +194,9 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 							}
 							ordersNet := OrderMessage{orderNet, order.ElevatorID, order.TargetElevator, order.MessageID}
 							sentAck[order.MessageID] = true
-							println("Trying to send to channel orders")
+							//println("Trying to send to channel orders")
 							channels.Orders <- ordersNet
-							println("Sent to channel orders")
+							//println("Sent to channel orders")
 							//println("RecieveFromNetwork() forwarded order with ID ", order.MessageID)
 						} else {
 							//println("RecieveFromNetwork() Already sent ack for order with ID", order.MessageID)

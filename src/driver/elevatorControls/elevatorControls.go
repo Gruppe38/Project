@@ -113,6 +113,11 @@ func watchElevator(currentFloorChan chan<- int, statusReport chan<- ElevatorStat
 	for !quit {
 		select {
 		case <-watchDog.C:
+			Println("Timer ran out, timout activated")
+			Println("Timer ran out, timout activated")
+			Println("Timer ran out, timout activated")
+			Println("Timer ran out, timout activated")
+			Println("Timer ran out, timout activated")
 			timeout = true
 			lastDir = driver.ReadBit(MOTORDIR)
 			doorOpen = driver.ReadBit(DOOR_OPEN)
@@ -125,26 +130,28 @@ func watchElevator(currentFloorChan chan<- int, statusReport chan<- ElevatorStat
 			case last:
 				break
 			default:
+				Println("Detected floor change")
 				lastDir = driver.ReadBit(MOTORDIR)
 				doorOpen = driver.ReadBit(DOOR_OPEN)
 				idle = driver.ReadAnalog(MOTOR) == 0
-				if !idle {
-					//println("Resetting timer to 5 sec")
-					watchDog.Reset(5 * time.Second)
-				} else {
-					//println("Stopping timer")
-					if !watchDog.Stop() && timeout && i == -1 {
-						<-watchDog.C
-					}
-					timeout = false
-				}
 				if i == -1 {
+					Println("Resetting timer due to leaving floor")
+					Println("Resetting timer due to leaving floor")
+					Println("Resetting timer due to leaving floor")
+					Println("Resetting timer due to leaving floor")
+					Println("Resetting timer due to leaving floor")
+					Println("Resetting timer due to leaving floor")
+					Println("Resetting timer due to leaving floor")
+					Println("Resetting timer due to leaving floor")
+					watchDog.Reset(5 * time.Second)
 					atFloor = false
 					status = ElevatorStatus{lastDir, last, timeout, atFloor, idle, doorOpen}
 				} else {
-					/*if !watchDog.Stop() && !timeout && i == -1 {
+					Println("Stopping timer due to arriving at floor")
+					if !watchDog.Stop() && !timeout && i == -1 {
 						<-watchDog.C
-					}*/
+					}
+					timeout = false
 					atFloor = true
 					status = ElevatorStatus{lastDir, i, timeout, atFloor, idle, doorOpen}
 					currentFloorChan <- i
@@ -160,19 +167,20 @@ func watchElevator(currentFloorChan chan<- int, statusReport chan<- ElevatorStat
 			idleUdpdate := driver.ReadAnalog(MOTOR) == 0
 			if lastDir != lastDirUpdate || doorOpen != doorOpenUpdate || idle != idleUdpdate {
 				//Println("Checking if direction or doors have changed since last floor update and updating status")
+				//Println("Updating status due to non-floor change, idle changed:", idle != idleUdpdate, "dir changed:", lastDir != lastDirUpdate, "door changed:", doorOpen != doorOpenUpdate)
 				lastDir = lastDirUpdate
 				doorOpen = doorOpenUpdate
 				idle = idleUdpdate
-				if !idle {
-					//println("Resetting timer to 5 sec")
+				/*if !idle {
+					println("Resetting timer to 5 sec due to statechange")
 					watchDog.Reset(5 * time.Second)
 				} else {
-					//println("Stopping timer")
+					println("Stopping timer due to statechange")
 					if !watchDog.Stop() && timeout && i == -1 {
 						<-watchDog.C
 					}
 					timeout = false
-				}
+				}*/
 				//Println("watchElevator() UPDATING STATUS DUE TO DOOR (", doorOpen, ") OR MOTORDIR (", lastDir, ")")
 				status = ElevatorStatus{lastDir, i, timeout, atFloor, idle, doorOpen}
 				statusReport <- status

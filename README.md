@@ -6,6 +6,8 @@ Ting som må gjøres før frist:
         -sende til slave: slutt å sende
         -sende til master: vent på ny master, send til ny master.
     -Fungerer solo, teste for fler
+-state deadElevator slutta å virke
+    Se tidligere versjoner?
 -Watchdog fungerer ikke
 -state deadElevator
     -Hvis eneste heis, behold eksterne ordre

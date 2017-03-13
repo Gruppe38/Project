@@ -68,7 +68,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 					Println("new peer update as master", peer)
 					activeElevators[peer.ID-1] = peer.Status
 				case status := <-statusReport:
-					Println("recieved statusReport in createOrderQueue(): from elevator", status.ElevatorID)
+					//Println("recieved statusReport in createOrderQueue(): from elevator", status.ElevatorID)
 					elevatorStatus[status.ElevatorID-1] = status.Message
 				case order := <-completedOrders:
 					Println("recieved completedOrders in createOrderQueue(): ", order.Message, " from elevator ", order.ElevatorID)

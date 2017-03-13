@@ -137,6 +137,7 @@ func main() {
 			case Master:
 				Println("Switched state to master")
 				stateUpdate <- state
+				masterBroadcastEnable <- true
 				for state == Master {
 					select {
 					case p := <-peerUpdateCh:
@@ -175,6 +176,7 @@ func main() {
 						}
 					}
 				}
+				masterBroadcastEnable <- false
 			case Slave:
 				Println("Switched state to slave")
 				stateUpdate <- state
@@ -208,7 +210,6 @@ func main() {
 								if newMaster == myID {
 									Println("I am master", myID)
 									state = Master
-									masterBroadcastEnable <- true
 								}
 								Println("New master", newMaster)
 								masterIDUpdate <- newMaster
@@ -285,10 +286,11 @@ func main() {
 				peerTxEnable <- false
 				masterBroadcastEnable <- false
 				for state == DeadElevator {
+					//WriteAnalog(MOTOR, 0)
 					select {
 					case status := <-statusReportsSend3:
 						if !status.Timeout {
-							state = DeadElevator
+							state = Slave
 						}
 					case <-peerUpdateCh:
 					case <-masterBroadcast:
@@ -331,7 +333,6 @@ func establishConnection(peerUpdateCh <-chan PeerUpdate, peerTxEnable chan<- boo
 	if numberOfPeers == 0 {
 		Println("I am master", myID)
 		masterID = myID
-		masterBroadcastEnable <- true
 		*state = Master
 	} else {
 		m := <-masterBroadcast
@@ -341,7 +342,6 @@ func establishConnection(peerUpdateCh <-chan PeerUpdate, peerTxEnable chan<- boo
 		Printf("  Lost:     %q\n", m.Lost)
 		masterID, _ = strconv.Atoi(m.Peers[0])
 		Println("I am not master, master is", masterID)
-		masterBroadcastEnable <- false
 		*state = Slave
 	}
 	masterIDUpdate <- masterID
