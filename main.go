@@ -39,6 +39,8 @@ func main() {
 		}
 		peerTxEnable <- true*/
 		peerUpdateCh := make(chan PeerUpdate)
+		peerUpdateSend1 := make(chan PeerStatus)
+		peerUpdateSend2 := make(chan PeerStatus)
 		peerTxEnable := make(chan bool)
 		peerUpdate := make(chan PeerStatus)
 		masterIDUpdate := make(chan int)
@@ -81,17 +83,19 @@ func main() {
 		go Transmitter(11038, strconv.Itoa(myID), masterBroadcastEnable)
 
 		go broadcastStateUpdates(stateUpdate, stateUpdateSend1, stateUpdateSend2, stateUpdateSend3)
+		go broadcastPeerUpdates(peerUpdate, peerUpdateSend1, peerUpdateSend2)
+		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
+		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2, orderMessageSend3)
 
 		go LocalElevator(movementInstructions, statusReports, movementReport)
 		go MonitorOrderbuttons(buttonReports)
 
-		go SendToNetwork(myID, masterIDUpdate, stateUpdateSend2, sendChannels)
+		go SendToNetwork(myID, masterIDUpdate, peerUpdateSend2, stateUpdateSend2, sendChannels)
 		go RecieveFromNetwork(myID, stateUpdateSend3, recieveChannels)
 
-		go CreateOrderQueue(stateUpdateSend1, peerUpdate, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport, orderMessageSend3)
+		go CreateOrderQueue(stateUpdateSend1, peerUpdateSend1, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport, orderMessageSend3)
 		go Destination(statusReportsSend2, orderMessageSend1, movementInstructions)
-		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
-		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2, orderMessageSend3)
+
 		go WatchCompletedOrders(movementReport, buttonCompletedSend)
 		go WatchIncommingOrders(buttonReports, confirmedQueue, buttonNewSend, pushOrdersToMaster)
 		go CreateCurrentQueue(orderMessageSend2, confirmedQueue)
@@ -384,6 +388,23 @@ func broadcastStateUpdates(stateUpdate <-chan int, send1, send2, send3 chan<- in
 				close(send1)
 				close(send2)
 				close(send3)
+				quit = true
+			}
+		}
+	}
+}
+
+func broadcastPeerUpdates(PeerUpdate <-chan PeerStatus, send1, send2 chan<- PeerStatus) {
+	quit := false
+	for !quit {
+		select {
+		case status, t := <-PeerUpdate:
+			if t {
+				send1 <- status
+				send2 <- status
+			} else {
+				close(send1)
+				close(send2)
 				quit = true
 			}
 		}

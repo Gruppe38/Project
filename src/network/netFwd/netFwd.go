@@ -8,7 +8,7 @@ import (
 	"net"
 	. "strconv"
 	"strings"
-	//"time"
+	"time"
 )
 
 //todo
@@ -17,14 +17,20 @@ import (
 //myID, får id til heisen, må fåes rett etter oppstart, fra main
 //masterID - tilsvarende myID
 
-func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels SendChannels) {
+func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, stateUpdate chan int, channels SendChannels) {
 	master := <-masterID
 	state := <-stateUpdate
 	var messageCounter int64 = 0
 
-	//unconfirmedStatus := make(map[int64]StatusMessage)
-	//unconfirmedButton := make(map[int64]ButtonMessage)
-	//unconfirmedOrders := make(map[int64]OrderMessage)
+	activeElevators := [3]bool{}
+	var recievedAck [3]map[int64]int
+	recievedAck[0] = make(map[int64]int)
+	recievedAck[1] = make(map[int64]int)
+	recievedAck[2] = make(map[int64]int)
+
+	unconfirmedStatusMessages := make(map[int64]StatusMessage)
+	unconfirmedBUttonMessages := make(map[int64]ButtonMessage)
+	unconfirmedOrderMessages := make(map[int64]OrderMessageNet)
 
 	statusMes := make(chan StatusMessage)
 	buttonMes := make(chan ButtonMessage)
@@ -33,6 +39,7 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 
 	go bcast.Transmitter(13038, statusMes, buttonMes, ordersMes)
 	go bcast.Receiver(14038, ackRx)
+	resendTicker := time.NewTicker(100 * time.Millisecond)
 	for {
 		switch state {
 		case Master, Slave:
@@ -47,6 +54,8 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 					messageID := messageCounter
 					messageCounter++
 					statMes := StatusMessage{stat, me, master, messageID}
+					recievedAck[master-1][messageID] = 0
+					unconfirmedStatusMessages[messageID] = statMes
 					//unconfirmedStatus[messageID] = statMes
 					statusMes <- statMes
 					//println("SendToNetwork() sent status dir:", stat.Dir," lastFloor: ", stat.LastFloor, " activeMotor:" ,stat.ActiveMotor, " atFloor", stat.AtFloor, "doorOpen", stat.DoorOpen)
@@ -55,14 +64,19 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 					messageID := messageCounter
 					messageCounter++
 					butMes := ButtonMessage{button, true, me, master, messageID}
+					recievedAck[master-1][messageID] = 1
+					unconfirmedBUttonMessages[messageID] = butMes
 					//unconfirmedButton[messageID] = butMes
 					buttonMes <- butMes
 					//println("SendToNetwork() sent new button", button)
 				case button := <-channels.ButtonCompleted:
 					//println("SendToNetwork() got completed button", button)
+
 					messageID := messageCounter
 					messageCounter++
 					butMes := ButtonMessage{button, false, me, master, messageID}
+					recievedAck[master-1][messageID] = 1
+					unconfirmedBUttonMessages[messageID] = butMes
 					//unconfirmedButton[messageID] = butMes
 					buttonMes <- butMes
 					//println("SendToNetwork() sent completed button", button)
@@ -77,25 +91,43 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 					messageID := messageCounter
 					messageCounter++
 					ordMes := OrderMessageNet{orderNet, me, EVERYONE, messageID}
+					for i, v := range activeElevators {
+						if v {
+							recievedAck[i][messageID] = 2
+						}
+					}
+					unconfirmedOrderMessages[messageID] = ordMes
 					//unconfirmedOrders[messageID] = ordMes
 					ordersMes <- ordMes
 					//println("SendToNetwork() sent order with messageID:", ordMes.MessageID)
 				case ack := <-ackRx:
 					//println("SendToNetwork() recieved ack:", ack.Message, " with type ", ack.Type, " ack for me = ", ack.TargetElevator == me)
 					if ack.TargetElevator == me {
-						/*switch ack.Type {
-						case 0:
-							delete(unconfirmedStatus, ack.Message)
-						case 1:
-							delete(unconfirmedButton, ack.Message)
-						case 2:
-							delete(unconfirmedOrders, ack.Message)
-						}*/
-						break
+						delete(recievedAck[ack.ElevatorID-1], ack.Message)
 					}
 				case master = <-masterID:
 					println("SendToNetwork() got new master:", master)
 					continue
+				case peer := <-peerUpdates:
+					activeElevators[peer.ID-1] = peer.Status
+					if !peer.Status {
+						recievedAck[peer.ID-1] = make(map[int64]int)
+					}
+				case <-resendTicker.C:
+					for elevator, active := range activeElevators {
+						if active {
+							for messageID, acktype := range recievedAck[elevator] {
+								switch acktype {
+								case 0:
+									statusMes <- unconfirmedStatusMessages[messageID]
+								case 1:
+									buttonMes <- unconfirmedBUttonMessages[messageID]
+								case 2:
+									ordersMes <- unconfirmedOrderMessages[messageID]
+								}
+							}
+						}
+					}
 				}
 			}
 		case NoNetwork:
@@ -105,6 +137,11 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 				case master = <-masterID:
 					println("SendToNetwork() got new master:", master)
 				case state = <-stateUpdate:
+				case peer := <-peerUpdates:
+					activeElevators[peer.ID-1] = peer.Status
+					if !peer.Status {
+						recievedAck[peer.ID-1] = make(map[int64]int)
+					}
 				}
 
 			}
