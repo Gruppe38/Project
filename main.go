@@ -282,8 +282,11 @@ func main() {
 						} else {
 							state = Slave
 							masterIDUpdate <- masterID
+							Println("Starting complete push to master")
 							pushOrdersToMaster <- true
+							Println("Waiting for complete push to master")
 							<-pushOrdersToMaster
+							Println("Completed push to master")
 						}
 						/*if numberOfPeers == 1 {
 							state = Master

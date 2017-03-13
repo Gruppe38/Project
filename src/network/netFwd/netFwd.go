@@ -101,7 +101,12 @@ func SendToNetwork(me int, masterID <-chan int, stateUpdate chan int, channels S
 		case NoNetwork:
 			println("Network sender in state NoNetwork")
 			for state == NoNetwork {
-				state = <-stateUpdate
+				select {
+				case master = <-masterID:
+					println("SendToNetwork() got new master:", master)
+				case state = <-stateUpdate:
+				}
+
 			}
 		}
 	}
