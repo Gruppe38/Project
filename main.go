@@ -11,8 +11,8 @@ import (
 	. "./src/orderLogic/orders"
 	. "fmt"
 	. "./src/internalBroadcast"
+	. "./src/stateMachine/"
 	"strconv"
-	"time"
 )
 
 func main() {
@@ -41,13 +41,15 @@ func main() {
 		}
 		peerTxEnable <- true*/
 		peerUpdateCh := make(chan PeerUpdate)
-		peerUpdateSend1 := make(chan PeerStatus)
-		peerUpdateSend2 := make(chan PeerStatus)
 		peerTxEnable := make(chan bool)
-		peerUpdate := make(chan PeerStatus)
-		masterIDUpdate := make(chan int)
+		peerStatusUpdate := make(chan PeerStatus)
 		masterBroadcast := make(chan PeerUpdate)
 		masterBroadcastEnable := make(chan bool)
+		peerChannels := PeerChannels{peerUpdateCh, peerTxEnable, peerStatusUpdate, masterBroadcast, masterBroadcastEnable}
+
+		peerStatusUpdateSend1 := make(chan PeerStatus)
+		peerStatusUpdateSend2 := make(chan PeerStatus)
+		masterIDUpdate := make(chan int)
 
 		statusReportsSend1 := make(chan ElevatorStatus)
 		buttonNewSend := make(chan int)
@@ -85,17 +87,17 @@ func main() {
 		go Transmitter(11038, strconv.Itoa(myID), masterBroadcastEnable)
 
 		go BroadcastStateUpdates(stateUpdate, stateUpdateSend1, stateUpdateSend2, stateUpdateSend3)
-		go BroadcastPeerUpdates(peerUpdate, peerUpdateSend1, peerUpdateSend2)
+		go BroadcastPeerUpdates(peerStatusUpdate, peerStatusUpdateSend1, peerStatusUpdateSend2)
 		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
 		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2, orderMessageSend3)
 
 		go LocalElevator(movementInstructions, statusReports, movementReport)
 		go MonitorOrderbuttons(buttonReports)
 
-		go SendToNetwork(myID, masterIDUpdate, peerUpdateSend2, stateUpdateSend2, sendChannels)
+		go SendToNetwork(myID, masterIDUpdate, peerStatusUpdateSend2, stateUpdateSend2, sendChannels)
 		go RecieveFromNetwork(myID, stateUpdateSend3, recieveChannels)
 
-		go CreateOrderQueue(stateUpdateSend1, peerUpdateSend1, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport, orderMessageSend3)
+		go CreateOrderQueue(stateUpdateSend1, peerStatusUpdateSend1, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport, orderMessageSend3)
 		go Destination(statusReportsSend2, orderMessageSend1, movementInstructions)
 
 		go WatchCompletedOrders(movementReport, buttonCompletedSend)
@@ -105,7 +107,8 @@ func main() {
 		EstablishConnection(peerUpdateCh, peerTxEnable, masterIDUpdate,
 			masterBroadcast, masterBroadcastEnable, myID, &state)
 
-		for {
+		RunElevator(state, myID, stateUpdate, statusReportsSend3, masterIDUpdate, pushOrdersToMaster, peerChannels, sendChannels, recieveChannels)
+		/*for {
 			switch state {
 			case Init:
 				continue
@@ -125,14 +128,14 @@ func main() {
 							if i > 0 {
 								Println("newID as int =", i)
 								Println("Gained peer", p.New)
-								peerUpdate <- PeerStatus{i, true}
+								peerStatusUpdate <- PeerStatus{i, true}
 							}
 						}
 						for _, ID := range p.Lost {
 							Println("Lost peer", ID)
 							i, _ := strconv.Atoi(ID)
 							if i > 0 {
-								peerUpdate <- PeerStatus{i, false}
+								peerStatusUpdate <- PeerStatus{i, false}
 								Println("Lost peer", i)
 								if i == myID {
 									println("Detected lost connection")
@@ -201,7 +204,7 @@ func main() {
 							if i > 0 {
 								Println("newID as int =", i)
 								Println("Gained peer", p.New)
-								peerUpdate <- PeerStatus{i, true}
+								peerStatusUpdate <- PeerStatus{i, true}
 							}
 						}
 						for _, ID := range p.Lost {
@@ -209,7 +212,7 @@ func main() {
 							i, _ := strconv.Atoi(ID)
 							if i > 0 {
 								Println("Lost peer", i)
-								peerUpdate <- PeerStatus{i, false}
+								peerStatusUpdate <- PeerStatus{i, false}
 								if i == myID {
 									println("Detected lost connection")
 									state = NoNetwork
@@ -227,7 +230,7 @@ func main() {
 				println("Detected lost connection and switched state to NoNetwork")
 				stateUpdate <- state
 				stateUpdate2 := make(chan int)
-				peerUpdate <- PeerStatus{myID, true}
+				peerStatusUpdate <- PeerStatus{myID, true}
 				numberOfPeers := 0
 				masterID := -1
 				stateUpdateDelay := time.NewTimer(45 * time.Millisecond)
@@ -267,20 +270,9 @@ func main() {
 							<-pushOrdersToMaster
 							Println("Completed push to master")
 						}
-						/*if numberOfPeers == 1 {
-							state = Master
-						} else {
-							state = Slave
-							pushOrdersToMaster <- true
-							<-pushOrdersToMaster
-						}*/
 					}
 				}
 				stateUpdate2 <- state
-				/*Println("Switching state from ", state)
-				establishConnection(peerUpdateCh, peerTxEnable, masterIDUpdate,
-					masterBroadcast, masterBroadcastEnable, myID, &state)
-				Println("Switching state to ", state)*/
 
 			case DeadElevator:
 				Println("Entering state deadElevator")
@@ -309,12 +301,6 @@ func main() {
 					state = Slave
 				}
 			}
-		}
+		}*/
 	}
-
-	//elevatorIsAlive := IoInit()
-
-	/*if elevatorIsAlive {
-		state = DeadElevator
-	}*/
 }

@@ -1,5 +1,13 @@
 package definitions
 
+type PeerChannels struct {
+	PeerUpdateCh chan PeerUpdate
+	PeerTxEnable chan bool
+	PeerStatusUpdate chan PeerStatus
+	MasterBroadcast chan PeerUpdate
+	MasterBroadcastEnable chan bool
+}
+
 type SendChannels struct {
 	Status          chan ElevatorStatus
 	ButtonNew       chan int
@@ -12,6 +20,12 @@ type RecieveChannels struct {
 	ButtonNew       chan ButtonMessage
 	ButtonCompleted chan ButtonMessage
 	Orders          chan OrderMessage
+}
+
+type PeerUpdate struct {
+	Peers []string
+	New   string
+	Lost  []string
 }
 
 type ElevatorMovement struct {
