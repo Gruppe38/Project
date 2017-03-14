@@ -177,7 +177,7 @@ func WatchCompletedOrders(statusReport <-chan ElevatorMovement, buttonReports ch
 		//Println("WatchCompletedOrders got a status update")
 		if t {
 			Println("Siden dør er åpen blir det satt i gang clearing av ordre i etasje: ", status.TargetFloor)
-			if status.TargetFloor == N_FLOOR-1 {
+			if status.TargetFloor == N_FLOORS-1 {
 				buttonReports <- OrderButtonMatrix[3][1]
 			} else if status.TargetFloor == 0 {
 				buttonReports <- OrderButtonMatrix[0][0]
@@ -195,10 +195,12 @@ func WatchCompletedOrders(statusReport <-chan ElevatorMovement, buttonReports ch
 //buttonReports fra MonitorOrderbuttons
 //confirmedQueue fra createCurrentQueue
 //forwardOrders sender via nettverket, til createOrderQueue
-func WatchIncommingOrders(buttonReports <-chan int, confirmedQueue <-chan map[int]bool, forwardOrders chan int, pushOrdersToMaster chan bool) {
+func WatchIncommingOrders(confirmedQueue <-chan map[int]bool, forwardOrders chan int, pushOrdersToMaster chan bool) {
 	nonConfirmedQueue := make(map[int]bool)
 	confirmedOrders := make(map[int]bool)
 	flushTimer := time.NewTimer(100 * time.Millisecond)
+	buttonReports := make(chan int)
+	go MonitorOrderbuttons(buttonReports)
 	for {
 		select {
 		case button := <-buttonReports:
@@ -227,7 +229,7 @@ func WatchIncommingOrders(buttonReports <-chan int, confirmedQueue <-chan map[in
 				}
 			}
 			pushOrdersToMaster <- true
-			/*			for i := 0; i < N_FLOOR; i++ {
+			/*			for i := 0; i < N_FLOORS; i++ {
 						for j := 0; j < 3; j++{
 							button := OrderButtonMatrix[i][j]
 							if currentQueue[button] {
@@ -247,7 +249,7 @@ func CreateCurrentQueue(orderQueueReports <-chan OrderMessage, confirmedQueue ch
 		select {
 		case orderQueue := <-orderQueueReports:
 
-			for i := 0; i < N_FLOOR; i++ {
+			for i := 0; i < N_FLOORS; i++ {
 				for j := 0; j < 2; j++ {
 					button := OrderButtonMatrix[i][j]
 					currentQueue[button] = false

@@ -40,7 +40,7 @@ func Destination(statusReport <-chan ElevatorStatus, orders <-chan OrderMessage,
 
 func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMovement {
 	empty := true
-	orderButtonMatrix := [N_FLOOR][3]bool{}
+	orderButtonMatrix := [N_FLOORS][3]bool{}
 	for key, value := range orders {
 		if value {
 			Println("Knapp: ", BtoS(key), " er aktiv")
@@ -63,7 +63,7 @@ func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMo
 	return instructions
 }
 
-func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) ElevatorMovement {
+func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOORS][3]bool) ElevatorMovement {
 	//Println("Running function findNextOrder()")
 	//Println("status.Dir: ", status.Dir)
 	//Println("status.AtFloor: ", status.AtFloor)
@@ -98,25 +98,25 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 
 	case false:
 		if status.AtFloor {
-			//Println("Siden status.AtFloor er true og status.Dir er false kjøres forløkke fra i= ", status.LastFloor, "til i<N_FLOOR")
-			for i := status.LastFloor; i < N_FLOOR; i++ {
+			//Println("Siden status.AtFloor er true og status.Dir er false kjøres forløkke fra i= ", status.LastFloor, "til i<N_FLOORS")
+			for i := status.LastFloor; i < N_FLOORS; i++ {
 				if orderButtonMatrix[i][0] || orderButtonMatrix[i][2] {
 					return ElevatorMovement{status.Dir, status.Dir, i}
 				}
 			}
-			for i := N_FLOOR - 1; i >= status.LastFloor; i-- {
+			for i := N_FLOORS - 1; i >= status.LastFloor; i-- {
 				if orderButtonMatrix[i][1] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
 			}
 		} else {
-			//Println("Siden status.AtFloor er false og status.Dir er false kjøres forløkke fra i= ", status.LastFloor+1, "til i<N_FLOOR")
-			for i := status.LastFloor + 1; i < N_FLOOR; i++ {
+			//Println("Siden status.AtFloor er false og status.Dir er false kjøres forløkke fra i= ", status.LastFloor+1, "til i<N_FLOORS")
+			for i := status.LastFloor + 1; i < N_FLOORS; i++ {
 				if orderButtonMatrix[i][0] || orderButtonMatrix[i][2] {
 					return ElevatorMovement{status.Dir, status.Dir, i}
 				}
 			}
-			for i := N_FLOOR - 1; i >= status.LastFloor; i-- {
+			for i := N_FLOORS - 1; i >= status.LastFloor; i-- {
 				if orderButtonMatrix[i][1] {
 					return ElevatorMovement{status.Dir, !status.Dir, i}
 				}
@@ -136,7 +136,7 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOOR][3]bool) El
 		if t {
 			if status.DoorOpen {
 				Println("Siden dør er åpen blir det satt i gang clearing av ordre i etasje: ", status.LastFloor)
-				if status.LastFloor == N_FLOOR-1 {
+				if status.LastFloor == N_FLOORS-1 {
 					buttonReports <- OrderButtonMatrix[3][1]
 				} else if status.LastFloor == 0 {
 					buttonReports <- OrderButtonMatrix[0][0]

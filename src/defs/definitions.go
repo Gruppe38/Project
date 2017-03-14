@@ -58,7 +58,7 @@ type ElevatorStatus struct {
 }
 
 /* ElevatorQueue struct {
-	Orders [N_FLOOR][3]bool
+	Orders [N_FLOORS][3]bool
 }
 
 type OrderQueue struct {
@@ -207,17 +207,17 @@ const BUTTON_UP4 = -1
 const LIGHT_DOWN1 = -1
 const LIGHT_UP4 = -1
 
-const N_FLOOR = 4
+const N_FLOORS = 4
 const MAX_ELEVATORS = 3
 
-var LightMatrix = [N_FLOOR][3]int{
+var LightMatrix = [N_FLOORS][3]int{
 	{LIGHT_UP1, LIGHT_DOWN1, LIGHT_COMMAND1},
 	{LIGHT_UP2, LIGHT_DOWN2, LIGHT_COMMAND2},
 	{LIGHT_UP3, LIGHT_DOWN3, LIGHT_COMMAND3},
 	{LIGHT_UP4, LIGHT_DOWN4, LIGHT_COMMAND4},
 }
 
-var OrderButtonMatrix = [N_FLOOR][3]int{
+var OrderButtonMatrix = [N_FLOORS][3]int{
 	{BUTTON_UP1, BUTTON_DOWN1, BUTTON_COMMAND1},
 	{BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
 	{BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
@@ -225,7 +225,7 @@ var OrderButtonMatrix = [N_FLOOR][3]int{
 }
 
 func GetButtonIndex(button int) (int, int) {
-	for i := 0; i < N_FLOOR; i++ {
+	for i := 0; i < N_FLOORS; i++ {
 		for j := 0; j < 3; j++ {
 			if button == OrderButtonMatrix[i][j] {
 				return i, j
@@ -236,7 +236,7 @@ func GetButtonIndex(button int) (int, int) {
 }
 
 func GetLightIndex(light int) (int, int) {
-	for i := 0; i < N_FLOOR; i++ {
+	for i := 0; i < N_FLOORS; i++ {
 		for j := 0; j < 3; j++ {
 			if light == LightMatrix[i][j] {
 				return i, j

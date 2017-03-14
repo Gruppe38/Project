@@ -2,7 +2,6 @@ package stateMachine
 
 import (
 	. "../defs/"
-	//. "./src/network/localip"
 	. "../network/netFwd"
 	. "fmt"
 	"strconv"

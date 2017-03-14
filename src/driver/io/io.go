@@ -16,10 +16,10 @@ func IoInit() bool {
 	success := bool(int(C.io_init()) == 1)
 
 	if success {
-		for i := 0; i < N_FLOOR; i++ {
+		for i := 0; i < N_FLOORS; i++ {
 			for j := 0; j < 3; j++ {
 				//Avoding down for first floor and up for last floor
-				if !(i == 0 && j == 1) && !(i == N_FLOOR-1 && j == 0) {
+				if !(i == 0 && j == 1) && !(i == N_FLOORS-1 && j == 0) {
 					ClearBit(LightMatrix[i][j])
 				}
 			}
