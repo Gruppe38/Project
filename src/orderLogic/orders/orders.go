@@ -15,6 +15,9 @@ import (
 //CompletedOrders Ikke skrevet andre enden enda
 //newOrders kommer fra watchIncommingOrders via nettverk
 //orderQueueReport sendes via nettverk, til bland annet createCurrentQueue
+
+//Creates and maintains the complete orderQueue containing all assigned orders for each elevator while not a slave.
+//While the elevator is a slave it mainatains a copy of the instructions from master.
 func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, statusReport <-chan StatusMessage, completedOrders <-chan ButtonMessage,
 	newOrders <-chan ButtonMessage, orderQueueReport chan<- OrderQueue, orderQueueBackup <-chan OrderMessage) {
 	orders := *NewOrderQueue()
@@ -24,17 +27,18 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 	for {
 		switch state {
 		case Master, NoNetwork, DeadElevator:
-			for i, active := range activeElevators {
+			//Reassigns all orders to the currntly active elevators
+			for elevator, active := range activeElevators {
 				if !active {
-					for order, value := range orders.Elevator[i] {
+					for order, value := range orders.Elevator[elevator] {
 						if value && order != BUTTON_COMMAND1 && order != BUTTON_COMMAND2 && order != BUTTON_COMMAND3 && order != BUTTON_COMMAND4 {
-							println("CreateOrderQueue assigned", BtoS(order), "to: ", i+1)
+							println("CreateOrderQueue assigned", BtoS(order), "to: ", elevator+1)
 							cheapestCost := 9999
 							cheapestElevator := -1
 							for i, v := range activeElevators {
 								println("elevator #", i+1, "active =", v)
 								if v {
-									currentElevatorCost := calculateCost(orders.Elevator[i], elevatorStatus[i], order)
+									currentElevatorCost := calculateCost(elevatorStatus[i], order)
 									Println("Cost for elevator", i+1, "is ", currentElevatorCost)
 									if currentElevatorCost < cheapestCost {
 										cheapestCost = currentElevatorCost
@@ -46,10 +50,10 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 								Println(BtoS(order), "not assigned")
 								break
 							}
-							println("CreateOrderQueue assigned", BtoS(order), "to: ", i+1)
+							println("CreateOrderQueue assigned", BtoS(order), "to: ", elevator+1)
 							orders.Elevator[cheapestElevator][order] = true
 						} else if value {
-							orders.Elevator[i][order] = true
+							orders.Elevator[elevator][order] = true
 						}
 					}
 				}
@@ -57,6 +61,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 			ordersCopy := *NewOrderQueue()
 			copy(&orders, &ordersCopy)
 			orderQueueReport <- ordersCopy
+			
 			for state == Master || state == NoNetwork {
 				select {
 				case state = <-stateUpdate:
@@ -94,7 +99,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 						for i, v := range activeElevators {
 							println("elevator #", i+1, "active =", v)
 							if v {
-								currentElevatorCost := calculateCost(orders.Elevator[i], elevatorStatus[i], order.Message)
+								currentElevatorCost := calculateCost(elevatorStatus[i], order.Message)
 								Println("Cost for elevator", i+1, "is ", currentElevatorCost)
 								if currentElevatorCost < cheapestCost {
 									cheapestCost = currentElevatorCost
@@ -143,14 +148,10 @@ func copyMap(original *map[int]bool, clone *map[int]bool) {
 	*clone = *original
 }
 
-func calculateCost(orders map[int]bool, status ElevatorStatus, button int) int {
+//Returns the cost for assigning an order to an elevator
+func calculateCost(status ElevatorStatus, button int) int {
 	buttonFloor, _ := GetButtonIndex(button)
 	cost := 0
-	/*if !status.AtFloor {
-		cost++
-	} else if status.Idle {
-		cost += 1
-	}*/
 	if status.LastFloor < buttonFloor {
 		for floor := status.LastFloor; floor < buttonFloor; floor++ {
 			cost++
@@ -170,104 +171,91 @@ func calculateCost(orders map[int]bool, status ElevatorStatus, button int) int {
 	return cost
 }
 
-func WatchCompletedOrders(statusReport <-chan ElevatorMovement, buttonReports chan<- int) {
-	quit := false
-	for !quit {
-		status, t := <-statusReport
+//Recieves a floor and a direction and sends a message which tells master that the order is completed.
+func WatchCompletedOrders(movementReport <-chan ElevatorMovement, buttonReports chan<- int) {
+	for {
+		movement := <-movementReport
 		//Println("WatchCompletedOrders got a status update")
-		if t {
-			Println("Siden dør er åpen blir det satt i gang clearing av ordre i etasje: ", status.TargetFloor)
-			if status.TargetFloor == N_FLOORS-1 {
-				buttonReports <- OrderButtonMatrix[3][1]
-			} else if status.TargetFloor == 0 {
-				buttonReports <- OrderButtonMatrix[0][0]
-			} else if status.NextDir {
-				buttonReports <- OrderButtonMatrix[status.TargetFloor][1]
-			} else {
-				buttonReports <- OrderButtonMatrix[status.TargetFloor][0]
-			}
+		Println("Siden dør er åpen blir det satt i gang clearing av ordre i etasje: ", movement.TargetFloor)
+		if movement.TargetFloor == N_FLOORS-1 {
+			buttonReports <- OrderButtonMatrix[3][1]
+		} else if movement.TargetFloor == 0 {
+			buttonReports <- OrderButtonMatrix[0][0]
+		} else if movement.NextDir {
+			buttonReports <- OrderButtonMatrix[movement.TargetFloor][1]
 		} else {
-			quit = true
+			buttonReports <- OrderButtonMatrix[movement.TargetFloor][0]
 		}
 	}
 }
 
-//buttonReports fra MonitorOrderbuttons
-//confirmedQueue fra createCurrentQueue
-//forwardOrders sender via nettverket, til createOrderQueue
-func WatchIncommingOrders(confirmedQueue <-chan map[int]bool, forwardOrders chan int, pushOrdersToMaster chan bool) {
+//Recieves a button, checks if it is aware of an order for this button, if not, forward the button to master. 
+func WatchIncommingOrders(confirmedQueue <-chan map[int]bool, forwardOrders chan<- int, pushOrdersToMaster chan bool) {
 	nonConfirmedQueue := make(map[int]bool)
 	confirmedOrders := make(map[int]bool)
 	flushTimer := time.NewTimer(100 * time.Millisecond)
-	buttonReports := make(chan int)
-	go MonitorOrderbuttons(buttonReports)
+	forwardButtons := make(chan int)
+	go MonitorOrderbuttons(forwardButtons)
 	for {
 		select {
-		case button := <-buttonReports:
+		case button := <-forwardButtons:
 			if !nonConfirmedQueue[button] && !confirmedOrders[button] {
 				nonConfirmedQueue[button] = true
-				//nonConfirmedQueue[button] = true
 				forwardOrders <- button
 				Println("WatchIncommingOrders() sent button: ", BtoS(button))
 			} else {
 				Println("WatchIncommingOrders() did not send button: ", BtoS(button))
 			}
 		case confirmedOrders = <-confirmedQueue:
-			for k, v := range confirmedOrders {
-				if v {
-					nonConfirmedQueue[k] = false
+			for button, value := range confirmedOrders {
+				if value {
+					nonConfirmedQueue[button] = false
 				}
 			}
 			continue
+		//Reenable sending of nonconfirmed buttons
 		case <-flushTimer.C:
 			nonConfirmedQueue = make(map[int]bool)
 			flushTimer.Reset(100 * time.Millisecond)
+		//Sends all known orders to master.
+		//Used when reconnecting to the network
 		case <-pushOrdersToMaster:
-			for order, value := range confirmedOrders {
+			for button, value := range confirmedOrders {
 				if value {
-					forwardOrders <- order
+					forwardOrders <- button
 				}
 			}
 			pushOrdersToMaster <- true
-			/*			for i := 0; i < N_FLOORS; i++ {
-						for j := 0; j < 3; j++{
-							button := OrderButtonMatrix[i][j]
-							if currentQueue[button] {
-								nonConfirmedQueue[button] = false
-							}
-						}
-					}*/
 		}
 	}
 }
 
-//orderQueueReports fra CreateOrderQueue via nettverk
-//confirmedQueue sender til watchIncommingOrders
-func CreateCurrentQueue(orderQueueReports <-chan OrderMessage, confirmedQueue chan<- map[int]bool) {
+//Creates a queue containing all active external buttons no matter which elevator they are assigned to
+//as well as the active internal buttons for this elevator
+func CreateCurrentQueue(orderMessages <-chan OrderMessage, confirmedQueueReport chan<- map[int]bool) {
 	currentQueue := make(map[int]bool)
 	for {
 		select {
-		case orderQueue := <-orderQueueReports:
-
-			for i := 0; i < N_FLOORS; i++ {
-				for j := 0; j < 2; j++ {
-					button := OrderButtonMatrix[i][j]
+		case orders := <-orderMessages:
+			for floor := 0; floor < N_FLOORS; floor++ {
+				for buttonType := 0; buttonType < 2; buttonType++ {
+					button := OrderButtonMatrix[floor][buttonType]
 					currentQueue[button] = false
-					for k := 0; k < 3; k++ {
-						button := OrderButtonMatrix[i][j]
-						if orderQueue.Message.Elevator[k][button] {
+					for elevator := 0; elevator < 3; elevator++ {
+						button := OrderButtonMatrix[floor][buttonType]
+						if orders.Message.Elevator[elevator][button] {
 							currentQueue[button] = true
 						}
-						if k == orderQueue.TargetElevator {
-							button := OrderButtonMatrix[i][2]
-							currentQueue[button] = orderQueue.Message.Elevator[k-1][button]
+						if elevator == orders.TargetElevator {
+							button := OrderButtonMatrix[floor][2]
+							currentQueue[button] = orders.Message.Elevator[elevator-1][button]
 						}
 					}
 				}
 			}
-			ordersCopy := make(map[int]bool)
-			copyMap(&currentQueue, &ordersCopy)
-			confirmedQueue <- ordersCopy
+			currentQueueCopy := make(map[int]bool)
+			copyMap(&currentQueue, &currentQueueCopy)
+			confirmedQueueReport <- currentQueueCopy
 			ToggleLights(currentQueue)
 		}
 	}

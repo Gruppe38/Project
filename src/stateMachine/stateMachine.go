@@ -201,6 +201,11 @@ func RunElevator (state int, myID int, stateUpdate chan int, statusReportsSend3 
 						state = Slave
 					}
 				case <-peerChannels.PeerUpdateCh:
+				case m := <-peerChannels.MasterBroadcast:
+					if len(m.Peers) != 0 {
+						masterID, _ := strconv.Atoi(m.Peers[0])
+						masterIDUpdate <- masterID
+					}
 				}
 			}
 			peerChannels.PeerTxEnable <- true
@@ -214,4 +219,4 @@ func RunElevator (state int, myID int, stateUpdate chan int, statusReportsSend3 
 			}
 		}
 	}
-}
+}	
