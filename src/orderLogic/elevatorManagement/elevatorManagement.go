@@ -10,7 +10,9 @@ import (
 //statusReport fra broadcastElevator
 //OrderMessage fra createOrderQueue via nettverket
 //movementInstructions sender til LocalElevator
-func Destination(statusReport <-chan ElevatorStatus, orders <-chan OrderMessage, movementInstructions chan<- ElevatorMovement) {
+
+//When recieving a satus update or an orders update, calculates instructins on how to serve the next order.
+func AssignMovementInstruction(statusReport <-chan ElevatorStatus, orders <-chan OrderMessage, movementInstructions chan<- ElevatorMovement) {
 	status := ElevatorStatus{}
 	myOrders := make(map[int]bool)
 	for {
@@ -38,6 +40,7 @@ func Destination(statusReport <-chan ElevatorStatus, orders <-chan OrderMessage,
 	}
 }
 
+
 func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMovement {
 	empty := true
 	orderButtonMatrix := [N_FLOORS][3]bool{}
@@ -63,6 +66,7 @@ func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMo
 	return instructions
 }
 
+//Decides which order should be served next when given a floor and a direction of travel.
 func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOORS][3]bool) ElevatorMovement {
 	//Println("Running function findNextOrder()")
 	//Println("status.Dir: ", status.Dir)
@@ -125,34 +129,3 @@ func findNextOrder(status ElevatorStatus, orderButtonMatrix [N_FLOORS][3]bool) E
 	}
 	return ElevatorMovement{status.Dir, status.Dir, -1}
 }
-
-
-
-/*func WatchCompletedOrders(statusReport chan ElevatorStatus, buttonReports chan int) {
-	quit := false
-	for !quit {
-		status, t := <-statusReport
-		Println("WatchCompletedOrders got a status update")
-		if t {
-			if status.DoorOpen {
-				Println("Siden dør er åpen blir det satt i gang clearing av ordre i etasje: ", status.LastFloor)
-				if status.LastFloor == N_FLOORS-1 {
-					buttonReports <- OrderButtonMatrix[3][1]
-				} else if status.LastFloor == 0 {
-					buttonReports <- OrderButtonMatrix[0][0]
-				} else if status.Dir {
-					buttonReports <- OrderButtonMatrix[status.LastFloor][1]
-				} else {
-					buttonReports <- OrderButtonMatrix[status.LastFloor][0]
-				}
-			}
-		} else {
-			quit = true
-		}
-	}
-}*/
-
-
-
-//Help functions
-

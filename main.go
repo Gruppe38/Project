@@ -84,7 +84,7 @@ func main() {
 		go RecieveFromNetwork(myID, stateUpdateSend3, recieveChannels)
 
 		go CreateOrderQueue(stateUpdateSend1, peerStatusUpdateSend1, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport, orderMessageSend3)
-		go Destination(statusReportsSend2, orderMessageSend1, movementInstructions)
+		go AssignMovementInstruction(statusReportsSend2, orderMessageSend1, movementInstructions)
 
 		go WatchCompletedOrders(movementReport, buttonCompletedSend)
 		go WatchIncommingOrders(confirmedQueue, buttonNewSend, pushOrdersToMaster)
