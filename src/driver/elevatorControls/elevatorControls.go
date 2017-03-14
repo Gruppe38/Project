@@ -169,19 +169,19 @@ func watchElevator(currentFloorChan chan<- int, statusReport chan<- ElevatorStat
 			if lastDir != lastDirUpdate || doorOpen != doorOpenUpdate || idle != idleUdpdate {
 				//Println("Checking if direction or doors have changed since last floor update and updating status")
 				//Println("Updating status due to non-floor change, idle changed:", idle != idleUdpdate, "dir changed:", lastDir != lastDirUpdate, "door changed:", doorOpen != doorOpenUpdate)
-				lastDir = lastDirUpdate
-				doorOpen = doorOpenUpdate
-				idle = idleUdpdate
-				/*if !idle {
-					println("Resetting timer to 5 sec due to statechange")
+				if !idleUdpdate && idle {
+					println("Resetting timer to 5 sec due to statuschange")
 					watchDog.Reset(5 * time.Second)
-				} else {
-					println("Stopping timer due to statechange")
-					if !watchDog.Stop() && timeout && i == -1 {
+				} else if idleUdpdate && !idle {
+					println("Stopping timer due to statuschange")
+					if !watchDog.Stop() && !timeout && i == -1 {
 						<-watchDog.C
 					}
 					timeout = false
-				}*/
+				}
+				lastDir = lastDirUpdate
+				doorOpen = doorOpenUpdate
+				idle = idleUdpdate
 				//Println("watchElevator() UPDATING STATUS DUE TO DOOR (", doorOpen, ") OR MOTORDIR (", lastDir, ")")
 				status = ElevatorStatus{lastDir, i, timeout, atFloor, idle, doorOpen}
 				statusReport <- status
