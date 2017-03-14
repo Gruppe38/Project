@@ -44,7 +44,7 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 		switch state {
 		case Master, Slave, DeadElevator:
 			println("Network sender in state slave or master")
-			for state == Master || state == Slave {
+			for state == Master || state == Slave || state == DeadElevator {
 				select {
 				case state = <-stateUpdate:
 					break
@@ -103,6 +103,7 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 				case ack := <-ackRx:
 					//println("SendToNetwork() recieved ack:", ack.Message, " with type ", ack.Type, " ack for me = ", ack.TargetElevator == me)
 					if ack.TargetElevator == me {
+						println("Clearing ack for elevator", ack.ElevatorID, ack.Message)
 						delete(recievedAck[ack.ElevatorID-1], ack.Message)
 					}
 				case master = <-masterID:
@@ -117,6 +118,7 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 					for elevator, active := range activeElevators {
 						if active {
 							for messageID, acktype := range recievedAck[elevator] {
+								println("Sending something", messageID)
 								switch acktype {
 								case 0:
 									statusMes <- unconfirmedStatusMessages[messageID]
@@ -178,7 +180,7 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 		switch state {
 		case Slave, Master, DeadElevator:
 			println("Network reciver in state slave or master")
-			for state == Master || state == Slave {
+			for state == Master || state == Slave || state == DeadElevator {
 				select {
 				case state = <-stateUpdate:
 					break
@@ -260,7 +262,7 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 }
 
 //Transfer values directly from send channels to revice channels
-//Used to operate a solo elevator with no network connction. 
+//Used to operate a solo elevator with no network connction.
 func BybassNetwork(me int, stateUpdate chan int, send SendChannels, recieve RecieveChannels) {
 	println("Direct Transfer started")
 	state := NoNetwork

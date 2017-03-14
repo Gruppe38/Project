@@ -152,7 +152,7 @@ func watchElevator(currentFloorReport chan<- int, statusReport chan<- ElevatorSt
 					timeout = false
 					atFloor = true
 					Println("Elevator status is about to send. Elevator status")
-					statusReport <-  ElevatorStatus{lastDir, currentFloor, timeout, atFloor, idle, doorOpen}
+					statusReport <- ElevatorStatus{lastDir, currentFloor, timeout, atFloor, idle, doorOpen}
 					Println("Elevator status is sent. Elevator status")
 					currentFloorReport <- currentFloor
 					//Println("Current floor is sent to localElevator()")
@@ -228,7 +228,6 @@ func MonitorOrderbuttons(buttons chan<- int) {
 		}
 	}
 }
-
 
 // Binary encoding translating a decimal number into a binnary number
 func setFloorIndicator(floor int) {

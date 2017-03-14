@@ -1,10 +1,10 @@
 package definitions
 
 type PeerChannels struct {
-	PeerUpdateCh chan PeerUpdate
-	PeerTxEnable chan bool
-	PeerStatusUpdate chan PeerStatus
-	MasterBroadcast chan PeerUpdate
+	PeerUpdateCh          chan PeerUpdate
+	PeerTxEnable          chan bool
+	PeerStatusUpdate      chan PeerStatus
+	MasterBroadcast       chan PeerUpdate
 	MasterBroadcastEnable chan bool
 }
 
@@ -39,9 +39,6 @@ type AckMessage struct {
 	ElevatorID     int
 	TargetElevator int
 }
-
-
-
 
 type StatusMessage struct {
 	Message        ElevatorStatus
@@ -84,9 +81,6 @@ func NewOrderMessageNet() *OrderMessageNet {
 	}
 	return &orderMessageNet
 }
-
-
-
 
 type ElevatorMovement struct {
 	Dir         bool
@@ -143,10 +137,12 @@ const EVERYONE = 0
 var IPToID = map[string]int{
 	//"129.241.187.144": 1, //labplass 12
 	//"129.241.187.148": 2, //labplass 15
+	"129.241.187.143": 2, //labplass 5
 	//"129.241.187.142": 3, //labplass 14
 	//"129.241.187.147": 3, //labplass 16
-	"129.241.187.152": 3, //labplass 13
+	//"129.241.187.152": 3, //labplass 13
 	//"129.241.187.157": 3,
+	"129.241.187.141": 3, //labplass 4
 }
 
 //in port 4
@@ -240,7 +236,6 @@ func GetLightIndex(light int) (int, int) {
 	}
 	return -1, -1
 }
-
 
 func BtoS(button int) string {
 	switch button {

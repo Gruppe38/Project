@@ -3,7 +3,7 @@ package elevatorManagement
 import (
 	. "../../defs/"
 	//"../../driver/io/"
-	."../../driver/elevatorControls/"
+	. "../../driver/elevatorControls/"
 	. "fmt"
 	"time"
 )
@@ -62,7 +62,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 			copy(&orders, &ordersCopy)
 			orderQueueReport <- ordersCopy
 
-			for state == Master || state == NoNetwork {
+			for state == Master || state == NoNetwork || state == DeadElevator {
 				select {
 				case state = <-stateUpdate:
 					println("CreateOrderQueue() was told to switch state to", state, "while master")
@@ -189,7 +189,7 @@ func WatchCompletedOrders(movementReport <-chan ElevatorMovement, buttonReports 
 	}
 }
 
-//Recieves a button, checks if it is aware of an order for this button, if not, forward the button to master. 
+//Recieves a button, checks if it is aware of an order for this button, if not, forward the button to master.
 func WatchIncommingOrders(confirmedQueue <-chan map[int]bool, forwardOrders chan<- int, pushOrdersToMaster chan bool) {
 	nonConfirmedQueue := make(map[int]bool)
 	confirmedOrders := make(map[int]bool)
@@ -246,9 +246,9 @@ func CreateCurrentQueue(orderMessages <-chan OrderMessage, confirmedQueueReport 
 						if orders.Message.Elevator[elevator][button] {
 							currentQueue[button] = true
 						}
-						if elevator == orders.TargetElevator {
+						if elevator == orders.TargetElevator-1 {
 							button := OrderButtonMatrix[floor][2]
-							currentQueue[button] = orders.Message.Elevator[elevator-1][button]
+							currentQueue[button] = orders.Message.Elevator[elevator][button]
 						}
 					}
 				}
