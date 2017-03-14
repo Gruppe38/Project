@@ -22,11 +22,11 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 	state := <-stateUpdate
 	var messageCounter int64 = 0
 
-	activeElevators := [3]bool{}
-	var recievedAck [3]map[int64]int
-	recievedAck[0] = make(map[int64]int)
-	recievedAck[1] = make(map[int64]int)
-	recievedAck[2] = make(map[int64]int)
+	activeElevators := [MAX_ELEVATORS]bool{}
+	var recievedAck [MAX_ELEVATORS]map[int64]int
+	for elevator, _ := range recievedAck {
+		recievedAck[elevator] = make(map[int64]int)
+	}
 
 	unconfirmedStatusMessages := make(map[int64]StatusMessage)
 	unconfirmedBUttonMessages := make(map[int64]ButtonMessage)
@@ -39,7 +39,7 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 
 	go bcast.Transmitter(13038, statusMes, buttonMes, ordersMes)
 	go bcast.Receiver(14038, ackRx)
-	resendTicker := time.NewTicker(100 * time.Millisecond)
+	resendTicker := time.NewTicker(50 * time.Millisecond)
 	for {
 		switch state {
 		case Master, Slave, DeadElevator:
@@ -83,7 +83,7 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 				case order := <-channels.Orders:
 					println("SendToNetwork() got order")
 					orderNet := *NewOrderQueueNet()
-					for i := 0; i < 3; i++ {
+					for i := 0; i < MAX_ELEVATORS; i++ {
 						for k, v := range order.Elevator[i] {
 							orderNet.Elevator[i][Itoa(k)] = v
 						}
@@ -157,11 +157,10 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 
 	lastStatusMessageID := [3]int64{}
 	//lastOrderMessageID := [3]int64{}
-
-	var sentAck [3]map[int64]bool
-	sentAck[0] = make(map[int64]bool)
-	sentAck[1] = make(map[int64]bool)
-	sentAck[2] = make(map[int64]bool)
+	var sentAck [MAX_ELEVATORS]map[int64]bool
+	for elevator, _ := range sentAck {
+		sentAck[elevator] = make(map[int64]bool)
+	}
 
 	statusMes := make(chan StatusMessage)
 	buttonMes := make(chan ButtonMessage)
@@ -232,7 +231,7 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 						ackTx <- AckMessage{order.MessageID, 2, me, order.ElevatorID}
 						if !sentAck[order.ElevatorID-1][order.MessageID] {
 							orderNet := *NewOrderQueue()
-							for i := 0; i < 3; i++ {
+							for i := 0; i < MAX_ELEVATORS; i++ {
 								for k, v := range order.Message.Elevator[i] {
 									l, _ := Atoi(k)
 									orderNet.Elevator[i][l] = v
@@ -260,7 +259,9 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 	//random := rand.Int63()
 }
 
-func DirectTransfer(me int, stateUpdate chan int, send SendChannels, recieve RecieveChannels) {
+//Transfer values directly from send channels to revice channels
+//Used to operate a solo elevator with no network connction. 
+func BybassNetwork(me int, stateUpdate chan int, send SendChannels, recieve RecieveChannels) {
 	println("Direct Transfer started")
 	state := NoNetwork
 	for state == NoNetwork {
@@ -269,23 +270,19 @@ func DirectTransfer(me int, stateUpdate chan int, send SendChannels, recieve Rec
 			break
 		case status := <-send.Status:
 			println("Direct transfer got new status")
-			statMes := StatusMessage{status, me, me, 0}
-			recieve.Status <- statMes
+			recieve.Status <- StatusMessage{status, me, me, 0}
 			println("Direct transfer sent new status")
 		case order := <-send.ButtonNew:
 			println("Direct transfer got new order")
-			statMes := ButtonMessage{order, true, me, me, 0}
-			recieve.ButtonNew <- statMes
+			recieve.ButtonNew <- ButtonMessage{order, true, me, me, 0}
 			println("Direct transfer sent new order")
 		case order := <-send.ButtonCompleted:
 			println("Direct transfer got completed order")
-			statMes := ButtonMessage{order, false, me, me, 0}
-			recieve.ButtonCompleted <- statMes
+			recieve.ButtonCompleted <- ButtonMessage{order, false, me, me, 0}
 			println("Direct transfer sent completed order")
 		case orderQueue := <-send.Orders:
 			println("Direct transfer got new orderqueue")
-			orderMes := OrderMessage{orderQueue, me, me, 0}
-			recieve.Orders <- orderMes
+			recieve.Orders <- OrderMessage{orderQueue, me, me, 0}
 			println("Direct transfer sent new orderqueue")
 		}
 	}

@@ -8,6 +8,17 @@ type PeerChannels struct {
 	MasterBroadcastEnable chan bool
 }
 
+type PeerStatus struct {
+	ID     int
+	Status bool //true= new, false = lost
+}
+
+type PeerUpdate struct {
+	Peers []string
+	New   string
+	Lost  []string
+}
+
 type SendChannels struct {
 	Status          chan ElevatorStatus
 	ButtonNew       chan int
@@ -22,24 +33,15 @@ type RecieveChannels struct {
 	Orders          chan OrderMessage
 }
 
-type PeerUpdate struct {
-	Peers []string
-	New   string
-	Lost  []string
-}
-
-type ElevatorMovement struct {
-	Dir         bool
-	NextDir     bool
-	TargetFloor int
-}
-
 type AckMessage struct {
 	Message        int64
 	Type           int //0=status,1=button,2=order
 	ElevatorID     int
 	TargetElevator int
 }
+
+
+
 
 type StatusMessage struct {
 	Message        ElevatorStatus
@@ -48,36 +50,16 @@ type StatusMessage struct {
 	MessageID      int64 //set by network module
 }
 
-type ElevatorStatus struct {
-	Dir       bool
-	LastFloor int
-	Timeout   bool
-	AtFloor   bool
-	Idle      bool
-	DoorOpen  bool
-}
-
-/* ElevatorQueue struct {
-	Orders [N_FLOORS][3]bool
-}
-
-type OrderQueue struct {
-	Elevator1 ElevatorQueue
-	Elevator2 ElevatorQueue
-	Elevator3 ElevatorQueue
-}*/
-
-//MessageType true for nye ordre, false for utførte
 type ButtonMessage struct {
 	Message        int
-	MessageType    bool
+	MessageType    bool //true for new ordre, false for completed
 	ElevatorID     int
 	TargetElevator int
 	MessageID      int64 //set by network module
 }
 
 type OrderQueueNet struct {
-	Elevator [3]map[string]bool
+	Elevator [MAX_ELEVATORS]map[string]bool
 }
 
 type OrderMessageNet struct {
@@ -103,13 +85,33 @@ func NewOrderMessageNet() *OrderMessageNet {
 	return &orderMessageNet
 }
 
-type PeerStatus struct {
-	ID     int
-	Status bool //true= ny, false = tapt
+
+
+
+type ElevatorMovement struct {
+	Dir         bool
+	NextDir     bool
+	TargetFloor int
+}
+
+type ElevatorStatus struct {
+	Dir       bool
+	LastFloor int
+	Timeout   bool
+	AtFloor   bool
+	Idle      bool
+	DoorOpen  bool
 }
 
 type OrderQueue struct {
-	Elevator [3]map[int]bool
+	Elevator [MAX_ELEVATORS]map[int]bool
+}
+
+type OrderMessage struct {
+	Message        OrderQueue
+	ElevatorID     int
+	TargetElevator int
+	MessageID      int64 //set by network module
 }
 
 func NewOrderQueue() *OrderQueue {
@@ -118,13 +120,6 @@ func NewOrderQueue() *OrderQueue {
 		orderQueue.Elevator[i] = make(map[int]bool)
 	}
 	return &orderQueue
-}
-
-type OrderMessage struct {
-	Message        OrderQueue
-	ElevatorID     int
-	TargetElevator int
-	MessageID      int64 //set by network module
 }
 
 func NewOrderMessage() *OrderMessage {
@@ -147,10 +142,10 @@ const EVERYONE = 0
 
 var IPToID = map[string]int{
 	//"129.241.187.144": 1, //labplass 12
-	"129.241.187.148": 2, //labplass 15
-	"129.241.187.142": 3, //labplass 14
-	"129.241.187.147": 3, //labplass 16
-	//"129.241.187.152": 3, //labplass 13
+	//"129.241.187.148": 2, //labplass 15
+	//"129.241.187.142": 3, //labplass 14
+	//"129.241.187.147": 3, //labplass 16
+	"129.241.187.152": 3, //labplass 13
 	//"129.241.187.157": 3,
 }
 

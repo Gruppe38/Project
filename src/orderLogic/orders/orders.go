@@ -21,8 +21,8 @@ import (
 func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, statusReport <-chan StatusMessage, completedOrders <-chan ButtonMessage,
 	newOrders <-chan ButtonMessage, orderQueueReport chan<- OrderQueue, orderQueueBackup <-chan OrderMessage) {
 	orders := *NewOrderQueue()
-	activeElevators := [3]bool{}
-	elevatorStatus := [3]ElevatorStatus{}
+	activeElevators := [MAX_ELEVATORS]bool{}
+	elevatorStatus := [MAX_ELEVATORS]ElevatorStatus{}
 	state := <-stateUpdate
 	for {
 		switch state {
@@ -61,7 +61,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 			ordersCopy := *NewOrderQueue()
 			copy(&orders, &ordersCopy)
 			orderQueueReport <- ordersCopy
-			
+
 			for state == Master || state == NoNetwork {
 				select {
 				case state = <-stateUpdate:
@@ -241,7 +241,7 @@ func CreateCurrentQueue(orderMessages <-chan OrderMessage, confirmedQueueReport 
 				for buttonType := 0; buttonType < 2; buttonType++ {
 					button := OrderButtonMatrix[floor][buttonType]
 					currentQueue[button] = false
-					for elevator := 0; elevator < 3; elevator++ {
+					for elevator := 0; elevator < MAX_ELEVATORS; elevator++ {
 						button := OrderButtonMatrix[floor][buttonType]
 						if orders.Message.Elevator[elevator][button] {
 							currentQueue[button] = true

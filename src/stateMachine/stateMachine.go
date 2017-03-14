@@ -136,7 +136,7 @@ func RunElevator (state int, myID int, stateUpdate chan int, statusReportsSend3 
 			masterID := -1
 			stateUpdateDelay := time.NewTimer(45 * time.Millisecond)
 			stateUpdateDelay.Stop()
-			go DirectTransfer(myID, stateUpdate2, sendChannels, recieveChannels)
+			go BybassNetwork(myID, stateUpdate2, sendChannels, recieveChannels)
 			for state == NoNetwork {
 				select {
 				case p := <-peerChannels.PeerUpdateCh:
