@@ -8,13 +8,40 @@ import (
 	"time"
 )
 
-//Ovvervåke utførte ordre
-//behandle utførte og nye ordre
-
-//statusReport inneholder heistatus, kommer fra broadcastElevatorStatus via nettverk
-//CompletedOrders Ikke skrevet andre enden enda
-//newOrders kommer fra watchIncommingOrders via nettverk
-//orderQueueReport sendes via nettverk, til bland annet createCurrentQueue
+func redistributeOrders(activeElevators [MAX_ELEVATORS]bool, elevatorStatus [MAX_ELEVATORS]ElevatorStatus, orders OrderQueue) OrderQueue {
+	for elevator, active := range activeElevators {
+		if !active {
+			for order, value := range orders.Elevator[elevator] {
+				if value && order != BUTTON_COMMAND1 && order != BUTTON_COMMAND2 && order != BUTTON_COMMAND3 && order != BUTTON_COMMAND4 {
+					println("CreateOrderQueue assigned", BtoS(order), "from: ", elevator+1)
+					cheapestCost := 9999
+					cheapestElevator := -1
+					for i, v := range activeElevators {
+						println("elevator #", i+1, "active =", v)
+						if v {
+							currentElevatorCost := calculateCost(elevatorStatus[i], order)
+							Println("Cost for elevator", i+1, "is ", currentElevatorCost)
+							if currentElevatorCost < cheapestCost {
+								cheapestCost = currentElevatorCost
+								cheapestElevator = i
+							}
+						}
+					}
+					if cheapestElevator == -1 {
+						Println(BtoS(order), "not assigned")
+						break
+					}
+					println("CreateOrderQueue assigned", BtoS(order), "to: ", elevator+1)
+					orders.Elevator[cheapestElevator][order] = true
+					orders.Elevator[elevator][order] = false
+				} else if value {
+					orders.Elevator[elevator][order] = true
+				}
+			}
+		}
+	}
+	return orders
+}
 
 //Creates and maintains the complete orderQueue containing all assigned orders for each elevator while not a slave.
 //While the elevator is a slave it mainatains a copy of the instructions from master.
@@ -28,40 +55,10 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 		switch state {
 		case Master, NoNetwork, DeadElevator:
 			//Reassigns all orders to the currntly active elevators
-			for elevator, active := range activeElevators {
-				if !active {
-					for order, value := range orders.Elevator[elevator] {
-						if value && order != BUTTON_COMMAND1 && order != BUTTON_COMMAND2 && order != BUTTON_COMMAND3 && order != BUTTON_COMMAND4 {
-							println("CreateOrderQueue assigned", BtoS(order), "to: ", elevator+1)
-							cheapestCost := 9999
-							cheapestElevator := -1
-							for i, v := range activeElevators {
-								println("elevator #", i+1, "active =", v)
-								if v {
-									currentElevatorCost := calculateCost(elevatorStatus[i], order)
-									Println("Cost for elevator", i+1, "is ", currentElevatorCost)
-									if currentElevatorCost < cheapestCost {
-										cheapestCost = currentElevatorCost
-										cheapestElevator = i
-									}
-								}
-							}
-							if cheapestElevator == -1 {
-								Println(BtoS(order), "not assigned")
-								break
-							}
-							println("CreateOrderQueue assigned", BtoS(order), "to: ", elevator+1)
-							orders.Elevator[cheapestElevator][order] = true
-						} else if value {
-							orders.Elevator[elevator][order] = true
-						}
-					}
-				}
-			}
+			orders = redistributeOrders(activeElevators, elevatorStatus, orders)
 			ordersCopy := *NewOrderQueue()
 			copy(&orders, &ordersCopy)
 			orderQueueReport <- ordersCopy
-
 			for state == Master || state == NoNetwork || state == DeadElevator {
 				select {
 				case state = <-stateUpdate:
@@ -70,6 +67,12 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 				case peer := <-peerUpdate:
 					Println("new peer update as master", peer)
 					activeElevators[peer.ID-1] = peer.Status
+					if !peer.Status {
+						orders = redistributeOrders(activeElevators, elevatorStatus, orders)
+						ordersCopy := *NewOrderQueue()
+						copy(&orders, &ordersCopy)
+						orderQueueReport <- ordersCopy
+					}
 				case status := <-statusReport:
 					//Println("recieved statusReport in createOrderQueue(): from elevator", status.ElevatorID)
 					elevatorStatus[status.ElevatorID-1] = status.Message

@@ -39,11 +39,12 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 
 	go bcast.Transmitter(13038, statusMes, buttonMes, ordersMes)
 	go bcast.Receiver(14038, ackRx)
-	resendTicker := time.NewTicker(50 * time.Millisecond)
+	var resendTicker time.Ticker
 	for {
 		switch state {
 		case Master, Slave, DeadElevator:
 			println("Network sender in state slave or master")
+			resendTicker = *time.NewTicker(100 * time.Millisecond)
 			for state == Master || state == Slave || state == DeadElevator {
 				select {
 				case state = <-stateUpdate:
@@ -108,7 +109,6 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 					}
 				case master = <-masterID:
 					println("SendToNetwork() got new master:", master)
-					continue
 				case peer := <-peerUpdates:
 					activeElevators[peer.ID-1] = peer.Status
 					if !peer.Status {
@@ -121,10 +121,13 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 								println("Sending something", messageID)
 								switch acktype {
 								case 0:
+									println("Sending status", messageID)
 									statusMes <- unconfirmedStatusMessages[messageID]
 								case 1:
+									println("Sending button", messageID)
 									buttonMes <- unconfirmedBUttonMessages[messageID]
 								case 2:
+									println("Sending order", messageID)
 									ordersMes <- unconfirmedOrderMessages[messageID]
 								}
 							}
@@ -134,6 +137,7 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 			}
 		case NoNetwork:
 			println("Network sender in state NoNetwork")
+			resendTicker.Stop()
 			for state == NoNetwork {
 				select {
 				case master = <-masterID:
@@ -144,6 +148,7 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 					if !peer.Status {
 						recievedAck[peer.ID-1] = make(map[int64]int)
 					}
+				case <-resendTicker.C:
 				}
 
 			}
