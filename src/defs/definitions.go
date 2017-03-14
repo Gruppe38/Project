@@ -210,6 +210,29 @@ var OrderButtonMatrix = [N_FLOOR][3]int{
 	{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
 }
 
+func GetButtonIndex(button int) (int, int) {
+	for i := 0; i < N_FLOOR; i++ {
+		for j := 0; j < 3; j++ {
+			if button == OrderButtonMatrix[i][j] {
+				return i, j
+			}
+		}
+	}
+	return -1, -1
+}
+
+func GetLightIndex(light int) (int, int) {
+	for i := 0; i < N_FLOOR; i++ {
+		for j := 0; j < 3; j++ {
+			if light == LightMatrix[i][j] {
+				return i, j
+			}
+		}
+	}
+	return -1, -1
+}
+
+
 func BtoS(button int) string {
 	switch button {
 	case BUTTON_UP1:

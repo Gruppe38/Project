@@ -8,7 +8,9 @@ import (
 	. "./src/network/netFwd"
 	. "./src/network/peers"
 	. "./src/orderLogic/elevatorManagement"
+	. "./src/orderLogic/orders"
 	. "fmt"
+	. "./src/internalBroadcast"
 	"strconv"
 	"time"
 )
@@ -82,8 +84,8 @@ func main() {
 		go Receiver(11038, masterBroadcast)
 		go Transmitter(11038, strconv.Itoa(myID), masterBroadcastEnable)
 
-		go broadcastStateUpdates(stateUpdate, stateUpdateSend1, stateUpdateSend2, stateUpdateSend3)
-		go broadcastPeerUpdates(peerUpdate, peerUpdateSend1, peerUpdateSend2)
+		go BroadcastStateUpdates(stateUpdate, stateUpdateSend1, stateUpdateSend2, stateUpdateSend3)
+		go BroadcastPeerUpdates(peerUpdate, peerUpdateSend1, peerUpdateSend2)
 		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
 		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2, orderMessageSend3)
 
@@ -100,41 +102,9 @@ func main() {
 		go WatchIncommingOrders(buttonReports, confirmedQueue, buttonNewSend, pushOrdersToMaster)
 		go CreateCurrentQueue(orderMessageSend2, confirmedQueue)
 
-		establishConnection(peerUpdateCh, peerTxEnable, masterIDUpdate,
+		EstablishConnection(peerUpdateCh, peerTxEnable, masterIDUpdate,
 			masterBroadcast, masterBroadcastEnable, myID, &state)
 
-		/*Println("Number of peers were", numberOfPeers)
-		masterID := -1
-		masterBroadcast := make(chan PeerUpdate)
-		masterBroadcastEnable := make(chan bool)
-		go Receiver(11038, masterBroadcast)
-		go Transmitter(11038, strconv.Itoa(myID), masterBroadcastEnable)
-		if numberOfPeers == 0 {
-			Println("I am master", myID)
-			masterID = myID
-			masterBroadcastEnable <- true
-			state = Master
-		} else {
-			m := <-masterBroadcast
-			Printf("Peer update:\n")
-			Printf("  Peers:    %q\n", m.Peers)
-			Printf("  New:      %q\n", m.New)
-			Printf("  Lost:     %q\n", m.Lost)
-			masterID, _ = strconv.Atoi(m.Peers[0])
-			Println("I am not master, master is", masterID)
-			masterBroadcastEnable <- false
-			state = Slave
-		}
-		masterIDUpdate <- masterID*/
-
-		/*for {
-			select {
-			case v := <-buttonReports:
-				Println(v)
-			case v := <-statusReports:
-				Println(v)
-			}
-		}*/
 		for {
 			switch state {
 			case Init:
@@ -347,71 +317,4 @@ func main() {
 	/*if elevatorIsAlive {
 		state = DeadElevator
 	}*/
-}
-
-func establishConnection(peerUpdateCh <-chan PeerUpdate, peerTxEnable chan<- bool, masterIDUpdate chan<- int,
-	masterBroadcast <-chan PeerUpdate, masterBroadcastEnable chan<- bool, myID int, state *int) {
-	timer := time.NewTimer(45 * time.Millisecond)
-	numberOfPeers := 0
-	select {
-	case p := <-peerUpdateCh:
-		numberOfPeers = len(p.Peers)
-	case <-timer.C:
-		break
-	}
-	peerTxEnable <- true
-
-	Println("Number of peers were", numberOfPeers)
-	masterID := -1
-	if numberOfPeers == 0 {
-		Println("I am master", myID)
-		masterID = myID
-		*state = Master
-	} else {
-		m := <-masterBroadcast
-		Printf("Peer update:\n")
-		Printf("  Peers:    %q\n", m.Peers)
-		Printf("  New:      %q\n", m.New)
-		Printf("  Lost:     %q\n", m.Lost)
-		masterID, _ = strconv.Atoi(m.Peers[0])
-		Println("I am not master, master is", masterID)
-		*state = Slave
-	}
-	masterIDUpdate <- masterID
-}
-
-func broadcastStateUpdates(stateUpdate <-chan int, send1, send2, send3 chan<- int) {
-	quit := false
-	for !quit {
-		select {
-		case status, t := <-stateUpdate:
-			if t {
-				send1 <- status
-				send2 <- status
-				send3 <- status
-			} else {
-				close(send1)
-				close(send2)
-				close(send3)
-				quit = true
-			}
-		}
-	}
-}
-
-func broadcastPeerUpdates(PeerUpdate <-chan PeerStatus, send1, send2 chan<- PeerStatus) {
-	quit := false
-	for !quit {
-		select {
-		case status, t := <-PeerUpdate:
-			if t {
-				send1 <- status
-				send2 <- status
-			} else {
-				close(send1)
-				close(send2)
-				quit = true
-			}
-		}
-	}
 }

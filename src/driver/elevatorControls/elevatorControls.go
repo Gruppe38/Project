@@ -246,3 +246,16 @@ func setFloorIndicator(floor int) {
 		driver.ClearBit(FLOOR_IND2)
 	}
 }
+
+func ToggleLights(confirmedQueue map[int]bool) {
+	for button, value := range confirmedQueue {
+		i, j := GetButtonIndex(button)
+		light := LightMatrix[i][j]
+		if value {
+			//Println("Setting light for button", button)
+			driver.SetBit(light)
+		} else {
+			driver.ClearBit(light)
+		}
+	}
+}

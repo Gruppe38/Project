@@ -6,6 +6,8 @@ import (
 	"net"
 	"sort"
 	"time"
+	."../../defs/"
+	"strconv"
 )
 
 type PeerUpdate struct {
@@ -84,4 +86,35 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 			peerUpdateCh <- p
 		}
 	}
+}
+
+func EstablishConnection(peerUpdateCh <-chan PeerUpdate, peerTxEnable chan<- bool, masterIDUpdate chan<- int,
+	masterBroadcast <-chan PeerUpdate, masterBroadcastEnable chan<- bool, myID int, state *int) {
+	timer := time.NewTimer(45 * time.Millisecond)
+	numberOfPeers := 0
+	select {
+	case p := <-peerUpdateCh:
+		numberOfPeers = len(p.Peers)
+	case <-timer.C:
+		break
+	}
+	peerTxEnable <- true
+
+	fmt.Println("Number of peers were", numberOfPeers)
+	masterID := -1
+	if numberOfPeers == 0 {
+		fmt.Println("I am master", myID)
+		masterID = myID
+		*state = Master
+	} else {
+		m := <-masterBroadcast
+		fmt.Printf("Peer update:\n")
+		fmt.Printf("  Peers:    %q\n", m.Peers)
+		fmt.Printf("  New:      %q\n", m.New)
+		fmt.Printf("  Lost:     %q\n", m.Lost)
+		masterID, _ = strconv.Atoi(m.Peers[0])
+		fmt.Println("I am not master, master is", masterID)
+		*state = Slave
+	}
+	masterIDUpdate <- masterID
 }
