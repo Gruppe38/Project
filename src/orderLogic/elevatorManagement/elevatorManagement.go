@@ -25,7 +25,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 	state := <-stateUpdate
 	for {
 		switch state {
-		case Master, NoNetwork:
+		case Master, NoNetwork, DeadElevator:
 			for i, active := range activeElevators {
 				if !active {
 					for order, value := range orders.Elevator[i] {

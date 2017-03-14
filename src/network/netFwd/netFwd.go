@@ -42,7 +42,7 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 	resendTicker := time.NewTicker(100 * time.Millisecond)
 	for {
 		switch state {
-		case Master, Slave:
+		case Master, Slave, DeadElevator:
 			println("Network sender in state slave or master")
 			for state == Master || state == Slave {
 				select {
@@ -177,7 +177,7 @@ func RecieveFromNetwork(me int, stateUpdate chan int, channels RecieveChannels) 
 	//Videresend på kanal, hvis ikke tidligere mottatt
 	for {
 		switch state {
-		case Slave, Master:
+		case Slave, Master, DeadElevator:
 			println("Network reciver in state slave or master")
 			for state == Master || state == Slave {
 				select {

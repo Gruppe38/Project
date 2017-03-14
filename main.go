@@ -216,9 +216,14 @@ func main() {
 									Println("I am master", myID)
 									state = Master
 								}
-								Println("New master", newMaster)
+								Println("New master from lost", newMaster)
 								masterIDUpdate <- newMaster
 							}
+						}
+						for _, ID := range m.New {
+							masterID := int(ID)
+							Println("New master from new", masterID)
+							masterIDUpdate <- masterID
 						}
 					case p = <-peerUpdateCh:
 						if p.New != "" {
@@ -311,6 +316,7 @@ func main() {
 				Println("Entering state deadElevator")
 				//Ingen knapper kan betjenes
 				//Late som død for nettverket?
+				stateUpdate <- state
 				peerTxEnable <- false
 				masterBroadcastEnable <- false
 				for state == DeadElevator {
@@ -321,7 +327,6 @@ func main() {
 							state = Slave
 						}
 					case <-peerUpdateCh:
-					case <-masterBroadcast:
 					}
 				}
 				peerTxEnable <- true
