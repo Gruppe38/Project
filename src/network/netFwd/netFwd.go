@@ -144,7 +144,9 @@ func RecieveFromNetwork(me int, masterID <-chan int, stateUpdate chan int, chann
 	buttonMes := make(chan ButtonMessage)
 	ordersMes := make(chan OrderMessageNet)
 	ackTx := make(chan AckMessage)
-
+	
+	latestOrderMes := OrderMessageNet{}
+	
 	go bcast.Receiver(13038, statusMes, buttonMes, ordersMes)
 	go bcast.Transmitter(14038, ackTx)
 
@@ -154,6 +156,7 @@ func RecieveFromNetwork(me int, masterID <-chan int, stateUpdate chan int, chann
 			for state == Master || state == Slave || state == DeadElevator {
 				select {
 				case master = <-masterID:
+					latestOrderMes := OrderMessageNet{}
 				case state = <-stateUpdate:
 				case stat := <-statusMes:
 					if stat.TargetElevator == me || stat.TargetElevator == EVERYONE {
@@ -182,7 +185,8 @@ func RecieveFromNetwork(me int, masterID <-chan int, stateUpdate chan int, chann
 					if order.TargetElevator == me || order.TargetElevator == EVERYONE {
 						order.TargetElevator = me
 						ackTx <- AckMessage{order.MessageID, 2, me, order.ElevatorID}
-						if !sentAck[order.ElevatorID-1][order.MessageID] && order.ElevatorID == master {
+						if !sentAck[order.ElevatorID-1][order.MessageID] && order.ElevatorID == master && order.MessageID > latestOrderMes.MessageID {
+							latestOrderMes = order
 							orderNet := *NewOrderQueue()
 							for i := 0; i < MAX_ELEVATORS; i++ {
 								for k, v := range order.Message.Elevator[i] {
@@ -201,6 +205,7 @@ func RecieveFromNetwork(me int, masterID <-chan int, stateUpdate chan int, chann
 			for state == NoNetwork {
 				select {
 				case master = <-masterID:
+					latestOrderMes := OrderMessageNet{}
 				case state = <-stateUpdate:
 				}
 			}
