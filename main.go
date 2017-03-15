@@ -4,14 +4,13 @@ import (
 	. "./src/defs/"
 	. "./src/driver/elevatorControls"
 	. "./src/driver/io"
-	//. "./src/network/localip"
+	. "./src/internalBroadcast"
 	. "./src/network/netFwd"
 	. "./src/network/peers"
 	. "./src/orderLogic/elevatorManagement"
 	. "./src/orderLogic/orders"
-	. "fmt"
-	. "./src/internalBroadcast"
 	. "./src/stateMachine/"
+	. "fmt"
 	"strconv"
 )
 
@@ -38,6 +37,8 @@ func main() {
 		peerStatusUpdateSend1 := make(chan PeerStatus)
 		peerStatusUpdateSend2 := make(chan PeerStatus)
 		masterIDUpdate := make(chan int)
+		masterIDUpdateSend1 := make(chan int)
+		masterIDUpdateSend2 := make(chan int)
 
 		statusReportsSend1 := make(chan ElevatorStatus)
 		buttonNewSend := make(chan int)
@@ -77,11 +78,12 @@ func main() {
 		go BroadcastPeerUpdates(peerStatusUpdate, peerStatusUpdateSend1, peerStatusUpdateSend2)
 		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
 		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2, orderMessageSend3)
+		go BroadcastMasterUpdate(masterIDUpdate, masterIDUpdateSend1, masterIDUpdateSend2)
 
 		go ExecuteInstructions(movementInstructions, statusReports, movementReport)
 
-		go SendToNetwork(myID, masterIDUpdate, peerStatusUpdateSend2, stateUpdateSend2, sendChannels)
-		go RecieveFromNetwork(myID, stateUpdateSend3, recieveChannels)
+		go SendToNetwork(myID, masterIDUpdateSend1, peerStatusUpdateSend2, stateUpdateSend2, sendChannels)
+		go RecieveFromNetwork(myID, masterIDUpdateSend2, stateUpdateSend3, recieveChannels)
 
 		go CreateOrderQueue(stateUpdateSend1, peerStatusUpdateSend1, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport, orderMessageSend3)
 		go AssignMovementInstruction(statusReportsSend2, orderMessageSend1, movementInstructions)
