@@ -119,10 +119,13 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 							for messageID, acktype := range recievedAck[elevator] {
 								switch acktype {
 								case 0:
+									unconfirmedStatusMessages[messageID].TargetElevator = master
 									statusMes <- unconfirmedStatusMessages[messageID]
 								case 1:
+									unconfirmedBUttonMessages[messageID].TargetElevator = master
 									buttonMes <- unconfirmedBUttonMessages[messageID]
 								case 2:
+									unconfirmedOrderMessages[messageID].TargetElevator = master
 									ordersMes <- unconfirmedOrderMessages[messageID]
 								}
 							}
