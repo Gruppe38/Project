@@ -3,7 +3,6 @@ package driver
 import (
 	. "../../defs/"
 	"../io/"
-	. "fmt"
 	"time"
 )
 
@@ -24,7 +23,6 @@ func ExecuteInstructions(movementInstructions <-chan ElevatorMovement, statusRep
 	for {
 		select {
 		case instruction := <-movementInstructions:
-			Println("LocalElevator() got new movementInstruction: ", instruction)
 			targetFloor = instruction.TargetFloor
 			nextDir = instruction.NextDir
 			if instruction.Dir {
@@ -174,7 +172,6 @@ func MonitorOrderbuttons(buttons chan<- int) {
 					if driver.ReadBit(currentButton) {
 						noButtonsPressed = false
 						if currentButton != last {
-							Println("New button: ", BtoS(currentButton))
 							buttons <- currentButton
 							last = currentButton
 						}

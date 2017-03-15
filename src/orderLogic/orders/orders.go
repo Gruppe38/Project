@@ -3,7 +3,6 @@ package elevatorManagement
 import (
 	. "../../defs/"
 	. "../../driver/elevatorControls/"
-	"fmt"
 	"time"
 )
 
@@ -196,8 +195,6 @@ func WatchIncommingOrders(confirmedQueue <-chan map[int]bool, forwardOrders chan
 		//Sends all known orders to master.
 		//Used when reconnecting to the network
 		case <-pushOrdersToMaster:
-			fmt.Println("PUSHING ORDER")
-			time.Sleep(500 * time.Millisecond)
 			for button, value := range confirmedOrders {
 				if value {
 					forwardOrders <- button
@@ -208,9 +205,7 @@ func WatchIncommingOrders(confirmedQueue <-chan map[int]bool, forwardOrders chan
 					forwardOrders <- button
 				}
 			}
-			fmt.Println("PUSHED ORDER pre confirm")
 			pushOrdersToMaster <- true
-			fmt.Println("PUSHED ORDER post confirm")
 		}
 	}
 }

@@ -3,7 +3,7 @@ package stateMachine
 import (
 	. "../defs/"
 	. "../network/netFwd"
-	"fmt"
+	. "fmt"
 	"strconv"
 	"time"
 )
@@ -15,6 +15,7 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 			continue
 		//When an elevator is in case Master it calculates a cost and decides which elevator should take an order.
 		case Master:
+			Println("Current state: master")
 			stateUpdate <- state
 			peerChannels.MasterBroadcastEnable <- true
 			for state == Master {
@@ -45,11 +46,10 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 			peerChannels.MasterBroadcastEnable <- false
 		//When an elevator is in case Slave it recieves and order queue from master and decides which order should be handles first.
 		case Slave:
-			fmt.Println("AM SLAVE")
+			Println("Current state: slave")
 			stateUpdate <- state
 			p := PeerUpdate{}
 			for state == Slave {
-				fmt.Println("READING CHANNELS SLAVE")
 				select {
 				case m := <-peerChannels.MasterBroadcast:
 					for _, ID := range m.Lost {
@@ -100,6 +100,7 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 			}
 		//When an elevator is in case NoElevator it no longer takes orders from other elevators, but takes only its own orders(both internal and external)
 		case NoNetwork:
+			Println("Current state: noNetwork")
 			stateUpdate <- state
 			stateUpdate2 := make(chan int)
 			peerChannels.PeerStatusUpdate <- PeerStatus{myID, true}
@@ -142,6 +143,7 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 		//When an elevator is in case DeadElevator will give all orders to the previous master. If that was the elevator itself, it will save the orders for future completion.
 		//If the master is another elevator, it will assign external orders to an active elevator, and internal orders to this elevator for future completion.
 		case DeadElevator:
+			Println("Current state: DeadElevator")
 			stateUpdate <- state
 			peerChannels.PeerTxEnable <- false
 			peerChannels.MasterBroadcastEnable <- false
