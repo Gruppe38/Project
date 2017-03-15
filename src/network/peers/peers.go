@@ -1,17 +1,17 @@
 package peers
 
 import (
+	. "../../defs/"
 	"../conn"
 	"fmt"
 	"net"
 	"sort"
-	"time"
-	."../../defs/"
 	"strconv"
+	"time"
 )
 
 const interval = 15 * time.Millisecond
-const timeout = 100 * time.Millisecond
+const timeout = 300 * time.Millisecond
 
 func Transmitter(port int, id string, transmitEnable <-chan bool) {
 
@@ -94,7 +94,6 @@ func EstablishConnection(peerUpdateCh <-chan PeerUpdate, peerTxEnable chan<- boo
 	}
 	peerTxEnable <- true
 
-	fmt.Println("Number of peers were", numberOfPeers)
 	masterID := -1
 	if numberOfPeers == 0 {
 		fmt.Println("I am master", myID)
@@ -102,10 +101,6 @@ func EstablishConnection(peerUpdateCh <-chan PeerUpdate, peerTxEnable chan<- boo
 		*state = Master
 	} else {
 		m := <-masterBroadcast
-		fmt.Printf("Peer update:\n")
-		fmt.Printf("  Peers:    %q\n", m.Peers)
-		fmt.Printf("  New:      %q\n", m.New)
-		fmt.Printf("  Lost:     %q\n", m.Lost)
 		masterID, _ = strconv.Atoi(m.Peers[0])
 		fmt.Println("I am not master, master is", masterID)
 		*state = Slave

@@ -3,7 +3,6 @@ package driver
 /*
 #cgo LDFLAGS: -lcomedi -lm -std=c99
 #include "io.h"
-#include "elev.h"
 */
 import "C"
 import . "../../defs/"
@@ -33,61 +32,6 @@ func IoInit() bool {
 	return success
 
 }
-
-func SimInit() bool {
-	C.elev_init()
-	return true
-}
-
-func SetDirection(val int){
-	direction = val
-}
-
-func SetMotor(value bool){
-	if value {
-		C.elev_set_motor_direction(C.int(direction))
-	} else {
-		C.elev_set_motor_direction(C.int(0))
-	}
-	idle = !value
-}
-
-func GetMotor() int{
-	return direction
-}
-
-func SetFloorInd(floor int){
-	C.elev_set_floor_indicator(C.int(floor))
-}
-
-func SetLamp(button int, floor int, value int){
-	C.elev_set_button_lamp(C.int(button),C.int(floor),C.int(value))
-}
-
-func SetDoor(value int){
-	doorOpen = value == 1
-	C.elev_set_door_open_lamp(C.int(value))
-
-	println("Setting door bit to",value, "doorOpen is", doorOpen)
-}
-
-func GetButtonSignal(button int, floor int) bool {
-	return int(C.elev_get_button_signal(C.int(button),C.int(floor))) != 0
-}
-
-func GetFloorSignal() int {
-	return int(C.elev_get_floor_sensor_signal())
-}
-
-func GetDoorStatus() bool {
-	return doorOpen
-}
-
-func GetIdle() bool {
-	return idle
-}
-
-
 
 func SetBit(channel int) {
 	C.io_set_bit(C.int(channel))
