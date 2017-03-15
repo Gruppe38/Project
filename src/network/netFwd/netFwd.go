@@ -95,18 +95,8 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 							for messageID, acktype := range recievedAck[elevator] {
 								switch acktype {
 								case 0:
-<<<<<<< HEAD
-									unconfirmedStatusMessages[messageID].TargetElevator = master
-									statusMes <- unconfirmedStatusMessages[messageID]
-								case 1:
-									unconfirmedBUttonMessages[messageID].TargetElevator = master
-									buttonMes <- unconfirmedBUttonMessages[messageID]
-								case 2:
-									unconfirmedOrderMessages[messageID].TargetElevator = master
-									ordersMes <- unconfirmedOrderMessages[messageID]
-=======
-									temp := unconfirmedStatusMessages[messageID]
-									temp.TargetElevator = elevator + 1
+									 temp := unconfirmedStatusMessages[messageID] 
+									 temp.TargetElevator = elevator + 1
 									statusMes <- temp
 								case 1:
 									temp := unconfirmedBUttonMessages[messageID]
@@ -116,7 +106,6 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 									temp := unconfirmedOrderMessages[messageID]
 									temp.TargetElevator = elevator + 1
 									ordersMes <- temp
->>>>>>> b4c30526ee0890023e61bc0fa340bec526867665
 								}
 							}
 						}
@@ -167,7 +156,7 @@ func RecieveFromNetwork(me int, masterID <-chan int, stateUpdate chan int, chann
 			for state == Master || state == Slave || state == DeadElevator {
 				select {
 				case master = <-masterID:
-					latestOrderMes := OrderMessageNet{}
+					latestOrderMes = OrderMessageNet{}
 				case state = <-stateUpdate:
 				case stat := <-statusMes:
 					if stat.TargetElevator == me || stat.TargetElevator == EVERYONE {
@@ -216,7 +205,7 @@ func RecieveFromNetwork(me int, masterID <-chan int, stateUpdate chan int, chann
 			for state == NoNetwork {
 				select {
 				case master = <-masterID:
-					latestOrderMes := OrderMessageNet{}
+					latestOrderMes = OrderMessageNet{}
 				case state = <-stateUpdate:
 				}
 			}
