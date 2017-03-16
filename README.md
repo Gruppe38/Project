@@ -12,3 +12,5 @@ Transfer file: "scp -r pathSource username@ip:pathTarget"
 - Changed copy and copy
 -in AssignMovmentInstrucions in ElevatorManagement add initial status to AtFloor
 - changed condition to move from deadElevator and from noNetwork to also demanding no more active orders
+-changed new master from rune conversion to int
+-Give recieveFromNetwork peerudates to reset ack numbers

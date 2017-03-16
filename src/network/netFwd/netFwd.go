@@ -17,7 +17,7 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 
 	activeElevators := [MAX_ELEVATORS]bool{}
 	var recievedAck [MAX_ELEVATORS]map[int64]int
-	for elevator, _ := range recievedAck {
+	for elevator := range recievedAck {
 		recievedAck[elevator] = make(map[int64]int)
 	}
 
@@ -95,8 +95,8 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 							for messageID, acktype := range recievedAck[elevator] {
 								switch acktype {
 								case 0:
-									 temp := unconfirmedStatusMessages[messageID] 
-									 temp.TargetElevator = elevator + 1
+									temp := unconfirmedStatusMessages[messageID]
+									temp.TargetElevator = elevator + 1
 									statusMes <- temp
 								case 1:
 									temp := unconfirmedBUttonMessages[messageID]
@@ -131,12 +131,12 @@ func SendToNetwork(me int, masterID <-chan int, peerUpdates chan PeerStatus, sta
 	}
 }
 
-func RecieveFromNetwork(me int, masterID <-chan int, stateUpdate chan int, channels RecieveChannels) {
+func RecieveFromNetwork(me int, peerUpdates chan PeerStatus, masterID <-chan int, stateUpdate chan int, channels RecieveChannels) {
 	master := <-masterID
 	state := <-stateUpdate
 
 	var sentAck [MAX_ELEVATORS]map[int64]bool
-	for elevator, _ := range sentAck {
+	for elevator := range sentAck {
 		sentAck[elevator] = make(map[int64]bool)
 	}
 
@@ -144,9 +144,9 @@ func RecieveFromNetwork(me int, masterID <-chan int, stateUpdate chan int, chann
 	buttonMes := make(chan ButtonMessage)
 	ordersMes := make(chan OrderMessageNet)
 	ackTx := make(chan AckMessage)
-	
+
 	latestOrderMes := OrderMessageNet{}
-	
+
 	go bcast.Receiver(13038, statusMes, buttonMes, ordersMes)
 	go bcast.Transmitter(14038, ackTx)
 
@@ -158,6 +158,11 @@ func RecieveFromNetwork(me int, masterID <-chan int, stateUpdate chan int, chann
 				case master = <-masterID:
 					latestOrderMes = OrderMessageNet{}
 				case state = <-stateUpdate:
+				case master = <-masterID:
+				case peer := <-peerUpdates:
+					if !peer.Status {
+						sentAck[peer.ID-1] = make(map[int64]bool)
+					}
 				case stat := <-statusMes:
 					if stat.TargetElevator == me || stat.TargetElevator == EVERYONE {
 						currentStatusMessageID := stat.MessageID
@@ -207,6 +212,10 @@ func RecieveFromNetwork(me int, masterID <-chan int, stateUpdate chan int, chann
 				case master = <-masterID:
 					latestOrderMes = OrderMessageNet{}
 				case state = <-stateUpdate:
+				case peer := <-peerUpdates:
+					if !peer.Status {
+						sentAck[peer.ID-1] = make(map[int64]bool)
+					}
 				}
 			}
 		}

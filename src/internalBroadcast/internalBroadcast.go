@@ -39,12 +39,13 @@ func BroadcastStateUpdates(stateUpdate <-chan int, send1, send2, send3 chan<- in
 	}
 }
 
-func BroadcastPeerUpdates(PeerUpdate <-chan PeerStatus, send1, send2 chan<- PeerStatus) {
+func BroadcastPeerUpdates(PeerUpdate <-chan PeerStatus, send1, send2, send3 chan<- PeerStatus) {
 	for {
 		select {
 		case status := <-PeerUpdate:
 			send1 <- status
 			send2 <- status
+			send3 <- status
 		}
 	}
 }

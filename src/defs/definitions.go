@@ -68,7 +68,7 @@ type OrderMessageNet struct {
 
 func NewOrderQueueNet() *OrderQueueNet {
 	var orderQueueNet OrderQueueNet
-	for i, _ := range orderQueueNet.Elevator {
+	for i := range orderQueueNet.Elevator {
 		orderQueueNet.Elevator[i] = make(map[string]bool)
 	}
 	return &orderQueueNet
@@ -76,7 +76,7 @@ func NewOrderQueueNet() *OrderQueueNet {
 
 func NewOrderMessageNet() *OrderMessageNet {
 	var orderMessageNet OrderMessageNet
-	for i, _ := range orderMessageNet.Message.Elevator {
+	for i := range orderMessageNet.Message.Elevator {
 		orderMessageNet.Message.Elevator[i] = make(map[string]bool)
 	}
 	return &orderMessageNet
@@ -110,7 +110,7 @@ type OrderMessage struct {
 
 func NewOrderQueue() *OrderQueue {
 	var orderQueue OrderQueue
-	for i, _ := range orderQueue.Elevator {
+	for i := range orderQueue.Elevator {
 		orderQueue.Elevator[i] = make(map[int]bool)
 	}
 	return &orderQueue
@@ -118,7 +118,7 @@ func NewOrderQueue() *OrderQueue {
 
 func NewOrderMessage() *OrderMessage {
 	var orderMessage OrderMessage
-	for i, _ := range orderMessage.Message.Elevator {
+	for i := range orderMessage.Message.Elevator {
 		orderMessage.Message.Elevator[i] = make(map[int]bool)
 	}
 	return &orderMessage
@@ -146,7 +146,7 @@ var IPToID = map[string]int{
 	//"129.241.187.142": 3, //labplass 14
 	//"129.241.187.147": 3, //labplass 16
 	//"129.241.187.152": 3, //labplass 13
-	//"129.241.187.141": 3, //labplass 4
+	//"129.241.187.141": 1, //labplass 4
 	"129.241.187.150": 3, //labplass 3
 }
 

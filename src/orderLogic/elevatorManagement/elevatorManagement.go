@@ -1,7 +1,6 @@
 package elevatorManagement
 
 import (
-	. "fmt"
 	. "../../defs/"
 )
 
@@ -41,11 +40,9 @@ func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMo
 		return ElevatorMovement{status.Dir, status.Dir, -1}
 	}
 	instructions := findNextOrder(status, orderButtonMatrix)
-	Println(instructions)
 	if instructions.TargetFloor == -1 {
 		status.Dir = !status.Dir
 		instructions = findNextOrder(status, orderButtonMatrix)
-		Println(instructions)
 	}
 	return instructions
 }

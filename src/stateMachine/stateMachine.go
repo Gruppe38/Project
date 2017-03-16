@@ -66,15 +66,24 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 								}
 							}
 							newMaster, _ := strconv.Atoi(p.Peers[0])
+							Println("Peers list1: ", p.Peers)
 							if newMaster == myID {
 								state = Master
 							}
+							Println("New master1: ", newMaster)
 							masterIDUpdate <- newMaster
 						}
 					}
-					for _, ID := range m.New {
-						masterID := int(ID)
-						masterIDUpdate <- masterID
+					/*for _, ID := range m.New {
+					masterID := int(ID)
+					Println("m.new: ", m.New)
+					Println("Peers list2: ", p.Peers)
+					Println("New master2: ", masterID)
+					masterIDUpdate <- masterID*/
+					if m.New != "" {
+						newMaster, _ := strconv.Atoi(m.New)
+						masterIDUpdate <- newMaster
+						Println("New master: ", newMaster)
 					}
 				case p = <-peerChannels.PeerUpdateCh:
 					if p.New != "" {
@@ -146,10 +155,12 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 					if masterID == -1 {
 						state = Master
 						masterIDUpdate <- myID
+						Println("New master: ", myID)
 						stateUpdate2 <- state
 					} else {
 						state = Slave
 						masterIDUpdate <- masterID
+						Println("New master: ", masterID)
 						stateUpdate2 <- state
 						//pushOrdersToMaster <- true
 						//<-pushOrdersToMaster
@@ -161,7 +172,7 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 		case DeadElevator:
 			Println("Current state: DeadElevator")
 			stateUpdate <- state
-			masterID := myID
+			masterID := -1
 			peerChannels.PeerTxEnable <- false
 			peerChannels.MasterBroadcastEnable <- false
 			stateUpdateDelay := time.NewTimer(100 * time.Millisecond)
@@ -183,10 +194,11 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 				case m := <-peerChannels.MasterBroadcast:
 					if len(m.Peers) != 0 {
 						masterID, _ = strconv.Atoi(m.Peers[0])
+						Println("Master Update: ", masterID)
 						//pushOrdersToMaster <- true
 						//<-pushOrdersToMaster
 					}
-				case <-stateUpdateDelay.C: 
+				case <-stateUpdateDelay.C:
 					state = Slave
 				}
 			}
@@ -195,10 +207,14 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 			numberOfPeers := len(p.Peers)
 			if numberOfPeers == 1 {
 				state = Master
-				masterIDUpdate <- masterID
+				Println("New master1 in dead: ", masterID)
+				masterIDUpdate <- myID
 			} else {
 				state = Slave
-				masterIDUpdate <- masterID
+				if masterID != -1 {
+					Println("New master2 in dead: ", masterID)
+					masterIDUpdate <- masterID
+				}
 			}
 		}
 	}

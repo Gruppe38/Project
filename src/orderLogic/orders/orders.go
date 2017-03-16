@@ -3,6 +3,7 @@ package elevatorManagement
 import (
 	. "../../defs/"
 	. "../../driver/elevatorControls/"
+	. "fmt"
 	"time"
 )
 
@@ -57,6 +58,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 					break
 				case peer := <-peerUpdate:
 					activeElevators[peer.ID-1] = peer.Status
+					Println("Status change for elevator ", peer.ID, "to active = ", peer.Status)
 					if !peer.Status {
 						orders = redistributeOrders(activeElevators, elevatorStatus, orders)
 						ordersCopy := *NewOrderQueue()
@@ -122,7 +124,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 
 func copy(original OrderQueue, clone OrderQueue) {
 	for elevator := range original.Elevator {
-		for k,v := range original.Elevator[elevator] {
+		for k, v := range original.Elevator[elevator] {
 			clone.Elevator[elevator][k] = v
 		}
 	}

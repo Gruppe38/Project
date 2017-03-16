@@ -36,6 +36,7 @@ func main() {
 
 		peerStatusUpdateSend1 := make(chan PeerStatus)
 		peerStatusUpdateSend2 := make(chan PeerStatus)
+		peerStatusUpdateSend3 := make(chan PeerStatus)
 		masterIDUpdate := make(chan int)
 		masterIDUpdateSend1 := make(chan int)
 		masterIDUpdateSend2 := make(chan int)
@@ -75,7 +76,7 @@ func main() {
 		go Transmitter(11038, strconv.Itoa(myID), masterBroadcastEnable)
 
 		go BroadcastStateUpdates(stateUpdate, stateUpdateSend1, stateUpdateSend2, stateUpdateSend3)
-		go BroadcastPeerUpdates(peerStatusUpdate, peerStatusUpdateSend1, peerStatusUpdateSend2)
+		go BroadcastPeerUpdates(peerStatusUpdate, peerStatusUpdateSend1, peerStatusUpdateSend2, peerStatusUpdateSend3)
 		go BroadcastElevatorStatus(statusReports, statusReportsSend1, statusReportsSend2, statusReportsSend3)
 		go BroadcastOrderMessage(orderMessage, orderMessageSend1, orderMessageSend2, orderMessageSend3)
 		go BroadcastMasterUpdate(masterIDUpdate, masterIDUpdateSend1, masterIDUpdateSend2)
@@ -83,7 +84,7 @@ func main() {
 		go ExecuteInstructions(movementInstructions, statusReports, movementReport)
 
 		go SendToNetwork(myID, masterIDUpdateSend1, peerStatusUpdateSend2, stateUpdateSend2, sendChannels)
-		go RecieveFromNetwork(myID, masterIDUpdateSend2, stateUpdateSend3, recieveChannels)
+		go RecieveFromNetwork(myID, peerStatusUpdateSend3, masterIDUpdateSend2, stateUpdateSend3, recieveChannels)
 
 		go CreateOrderQueue(stateUpdateSend1, peerStatusUpdateSend1, statusMessage, buttonCompletedRecieve, buttonNewRecieve, orderQueueReport, orderMessageSend3)
 		go AssignMovementInstruction(statusReportsSend2, orderMessageSend1, movementInstructions)
