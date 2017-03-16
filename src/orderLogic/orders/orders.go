@@ -49,7 +49,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 		case Master, NoNetwork, DeadElevator:
 			orders = redistributeOrders(activeElevators, elevatorStatus, orders)
 			ordersCopy := *NewOrderQueue()
-			copy(&orders, &ordersCopy)
+			copy(orders, ordersCopy)
 			orderQueueReport <- ordersCopy
 			for state == Master || state == NoNetwork || state == DeadElevator {
 				select {
@@ -60,7 +60,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 					if !peer.Status {
 						orders = redistributeOrders(activeElevators, elevatorStatus, orders)
 						ordersCopy := *NewOrderQueue()
-						copy(&orders, &ordersCopy)
+						copy(orders, ordersCopy)
 						orderQueueReport <- ordersCopy
 					}
 				case status := <-statusReport:
@@ -70,7 +70,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 					orders.Elevator[order.ElevatorID-1][order.Message] = false
 					orders.Elevator[order.ElevatorID-1][OrderButtonMatrix[i][2]] = false
 					ordersCopy := *NewOrderQueue()
-					copy(&orders, &ordersCopy)
+					copy(orders, ordersCopy)
 					orderQueueReport <- ordersCopy
 				case order := <-newOrders:
 					if order.Message == BUTTON_COMMAND1 || order.Message == BUTTON_COMMAND2 ||
@@ -78,7 +78,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 						//println("newOrder is internal button")
 						orders.Elevator[order.ElevatorID-1][order.Message] = true
 						ordersCopy := *NewOrderQueue()
-						copy(&orders, &ordersCopy)
+						copy(orders, ordersCopy)
 						orderQueueReport <- ordersCopy
 					} else {
 						cheapestCost := 9999
@@ -98,7 +98,7 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 						}
 						orders.Elevator[cheapestElevator][order.Message] = true
 						ordersCopy := *NewOrderQueue()
-						copy(&orders, &ordersCopy)
+						copy(orders, ordersCopy)
 						orderQueueReport <- ordersCopy
 					}
 				case <-orderQueueBackup:
@@ -120,12 +120,19 @@ func CreateOrderQueue(stateUpdate <-chan int, peerUpdate <-chan PeerStatus, stat
 	}
 }
 
-func copy(original *OrderQueue, clone *OrderQueue) {
-	*clone = *original
+func copy(original OrderQueue, clone OrderQueue) {
+	for elevator := range original.Elevator {
+		for k,v := range original.Elevator[elevator] {
+			clone.Elevator[elevator][k] = v
+		}
+	}
 }
 
-func copyMap(original *map[int]bool, clone *map[int]bool) {
-	*clone = *original
+func copyMap(original map[int]bool, clone map[int]bool) {
+	//*clone = *original
+	for k, v := range original {
+		clone[k] = v
+	}
 }
 
 //Returns the cost for assigning an order to an elevator
@@ -234,7 +241,7 @@ func CreateCurrentQueue(orderMessages <-chan OrderMessage, confirmedQueueReport 
 				}
 			}
 			currentQueueCopy := make(map[int]bool)
-			copyMap(&currentQueue, &currentQueueCopy)
+			copyMap(currentQueue, currentQueueCopy)
 			confirmedQueueReport <- currentQueueCopy
 			ToggleLights(currentQueue)
 		}

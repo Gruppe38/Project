@@ -1,12 +1,14 @@
 package elevatorManagement
 
 import (
+	. "fmt"
 	. "../../defs/"
 )
 
 //When recieving a satus update or an orders update, calculates instructins on how to serve the next order.
 func AssignMovementInstruction(statusReport <-chan ElevatorStatus, orders <-chan OrderMessage, movementInstructions chan<- ElevatorMovement) {
 	status := ElevatorStatus{}
+	status.AtFloor = true
 	myOrders := make(map[int]bool)
 	for {
 		select {
@@ -39,9 +41,11 @@ func calculateDestination(status ElevatorStatus, orders map[int]bool) ElevatorMo
 		return ElevatorMovement{status.Dir, status.Dir, -1}
 	}
 	instructions := findNextOrder(status, orderButtonMatrix)
+	Println(instructions)
 	if instructions.TargetFloor == -1 {
 		status.Dir = !status.Dir
 		instructions = findNextOrder(status, orderButtonMatrix)
+		Println(instructions)
 	}
 	return instructions
 }

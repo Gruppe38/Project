@@ -106,6 +106,8 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 			peerChannels.PeerStatusUpdate <- PeerStatus{myID, true}
 			numberOfPeers := 0
 			masterID := -1
+			regainedNetworkConnection := false
+			doneWithOrders := false
 			stateUpdateDelay := time.NewTimer(45 * time.Millisecond)
 			stateUpdateDelay.Stop()
 			go BybassNetwork(myID, stateUpdate2, sendChannels, recieveChannels)
@@ -113,12 +115,26 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 				select {
 				case p := <-peerChannels.PeerUpdateCh:
 					if numberOfPeers == 0 {
-						stateUpdateDelay.Reset(100 * time.Millisecond)
+						regainedNetworkConnection = true
+						if doneWithOrders && regainedNetworkConnection {
+							stateUpdateDelay.Reset(100 * time.Millisecond)
+						}
 					}
 					numberOfPeers = len(p.Peers)
 				case status := <-statusReportsSend3:
 					if status.Timeout {
 						state = DeadElevator
+					}
+					if status.Idle && !status.DoorOpen {
+						doneWithOrders = true
+						if doneWithOrders && regainedNetworkConnection {
+							stateUpdateDelay.Reset(100 * time.Millisecond)
+						}
+					} else {
+						if !stateUpdateDelay.Stop() && doneWithOrders && regainedNetworkConnection {
+							<-stateUpdateDelay.C
+						}
+						doneWithOrders = false
 					}
 				case m := <-peerChannels.MasterBroadcast:
 					if len(m.Peers) != 0 {
@@ -145,22 +161,33 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 		case DeadElevator:
 			Println("Current state: DeadElevator")
 			stateUpdate <- state
+			masterID := myID
 			peerChannels.PeerTxEnable <- false
 			peerChannels.MasterBroadcastEnable <- false
+			stateUpdateDelay := time.NewTimer(100 * time.Millisecond)
+			stateUpdateDelay.Stop()
+			doneWithOrders := false
 			for state == DeadElevator {
 				select {
 				case status := <-statusReportsSend3:
-					if !status.Timeout {
-						state = Slave
+					if !status.Timeout && status.Idle && !status.DoorOpen {
+						doneWithOrders = true
+						stateUpdateDelay.Reset(100 * time.Millisecond)
+					} else {
+						if !stateUpdateDelay.Stop() && doneWithOrders {
+							<-stateUpdateDelay.C
+						}
+						doneWithOrders = false
 					}
 				case <-peerChannels.PeerUpdateCh:
 				case m := <-peerChannels.MasterBroadcast:
 					if len(m.Peers) != 0 {
-						masterID, _ := strconv.Atoi(m.Peers[0])
-						masterIDUpdate <- masterID
+						masterID, _ = strconv.Atoi(m.Peers[0])
 						//pushOrdersToMaster <- true
 						//<-pushOrdersToMaster
 					}
+				case <-stateUpdateDelay.C: 
+					state = Slave
 				}
 			}
 			peerChannels.PeerTxEnable <- true
@@ -168,8 +195,10 @@ func RunElevator(state int, myID int, stateUpdate chan int, statusReportsSend3 c
 			numberOfPeers := len(p.Peers)
 			if numberOfPeers == 1 {
 				state = Master
+				masterIDUpdate <- masterID
 			} else {
 				state = Slave
+				masterIDUpdate <- masterID
 			}
 		}
 	}
